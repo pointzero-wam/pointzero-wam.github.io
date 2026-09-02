@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="PointZero: 3D Point Track Completion for Learning Transferable 3D Dynamics">
+  <meta name="keywords" content="PointZero, 3D dynamics, point tracks, robot manipulation, world models">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PointZero: 3D Point Track Completion for Learning Transferable 3D Dynamics</title>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#127919;</text></svg>">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Noto+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="static/css/index.css?v=24">
+</head>
+<body>
+
+<!-- ===================== Header ===================== -->
+<section class="hero publication-header">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">PointZero: 3D Point Track Completion for Learning Transferable 3D Dynamics</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><a href="https://bart-ai.com" target="_blank" rel="noreferrer">Bardienus P. Duisterhof</a><sup>1</sup>,</span>
+            <span class="author-block"><a href="https://kywind.github.io" target="_blank" rel="noreferrer">Kaifeng Zhang</a><sup>2</sup>,</span>
+            <span class="author-block">Adam Hung<sup>1</sup>,</span>
+            <span class="author-block"><a href="https://wenbowen123.github.io" target="_blank" rel="noreferrer">Bowen Wen</a><sup>3</sup>,</span>
+            <span class="author-block"><a href="https://research.nvidia.com/person/stan-birchfield" target="_blank" rel="noreferrer">Stan Birchfield</a><sup>3</sup>,</span>
+            <span class="author-block"><a href="https://yunzhuli.github.io" target="_blank" rel="noreferrer">Yunzhu Li</a><sup>2</sup>,</span>
+            <span class="author-block"><a href="https://www.cs.cmu.edu/~deva/" target="_blank" rel="noreferrer">Deva Ramanan</a><sup>1</sup>,</span>
+            <span class="author-block"><a href="https://ichnow.ski" target="_blank" rel="noreferrer">Jeffrey Ichnowski</a><sup>1</sup></span>
+          </div>
+
+          <div class="is-size-5 publication-authors" style="margin-top: 0.5em;">
+            <span class="author-block"><sup>1</sup>Carnegie Mellon University</span>
+            <span class="author-block"><sup>2</sup>Columbia University</span>
+            <span class="author-block"><sup>3</sup>NVIDIA</span>
+          </div>
+
+          <div class="is-size-5 publication-authors" style="margin-top: 1em;">
+            <b class="publication-venue">Preprint, 2026</b>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="ai ai-arxiv"></i></span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">&#129303;</span>
+                  <span>Dataset</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#bibtex" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-quote-right"></i></span>
+                  <span>BibTeX</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Interactive teaser ===================== -->
+<section class="hero teaser">
+  <div class="container is-max-widescreen">
+    <div class="hero-body">
+      <div id="hero-viewer" data-pz-viewer="pre"></div>
+      <p class="pz-note">Live in-browser playback of PointZero's predictions (best of 10 samples, following the paper's
+      evaluation protocol). Real-scene clouds are densified for display from the model's 1,000 predicted point tracks;
+      conditioning tracks shown in orange.</p>
+      <h2 class="subtitle has-text-centered section-tagline">
+        <span class="pointzero">PointZero</span> learns transferable 3D dynamics by completing 3D point tracks &mdash; no robot action labels required.
+        Above: live predictions on real scenes, zero-shot &mdash; no fine-tuning, no robot data.
+      </h2>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Abstract ===================== -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            World models endow perceptual systems with the ability to predict how scenes evolve under interaction.
+            They are most beneficial when trained on diverse volumes of data, to instill a rich prior into downstream
+            applications. Existing methods for capturing <i>3D world models</i> are typically scene-specific dynamics
+            models, or require robot action labels &mdash; which excludes web video data from the training pool.
+            We study <i>3D point track completion</i> as a pre-training objective for learning transferable 3D dynamics
+            without robot data. Given a single RGB-D observation and sparse partial 3D trajectories (tracks), we predict
+            future 3D tracks of all observed points. We show this objective provides a rich dynamics prior, without
+            requiring robot action labels. We contribute a diverse dataset of 2.9 million synthetic frames spanning
+            deformable, articulated, and rigid objects, and use it to train PointZero. We show that a flexible and
+            expressive transformer, PointZero, outperforms prior methods on the same data. We demonstrate the utility
+            of our pre-training objective by fine-tuning PointZero for two downstream applications:
+            (1) action-conditioned dynamics and (2) robot manipulation. When fine-tuned to condition on end-effector
+            pose, PointZero outperforms the baselines on a recent action-conditioned 3D dynamics benchmark. When
+            fine-tuned to predict robot actions, PointZero outperforms or matches the baselines on 6/7 simulated and
+            real-world robot manipulation tasks. We furthermore evaluate training PointZero from scratch to isolate the
+            benefits of our proposed architecture from those of our proposed pre-training objective and dataset.
+            We release the dataset, model checkpoints, and full training recipe.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Method ===================== -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Method</h2>
+        <div class="content has-text-justified">
+          <p>
+            PointZero takes in a single RGB-D image and a small number of complete point tracks, and predicts dense 3D
+            point trajectories for <i>all</i> observed scene points. The architecture combines a Perceiver-IO visual
+            encoder over DINOv2 features with a denoising transformer that alternates point-level and global attention,
+            trained with a JiT-style x-prediction objective. Because both the labels and the conditioning are just 3D
+            point tracks &mdash; available from simulation, and in principle from any video via point tracking &mdash;
+            supervision is robot-free and interaction-agnostic. The same model can then be fine-tuned to condition on
+            robot end-effector pose, or to predict robot action chunks in addition to point tracks.
+          </p>
+        </div>
+        <div id="method-figure"></div>
+        <p class="pz-note" style="margin-top:1rem;">Three interactive takes on the method figure &mdash; pick one from the dropdown.
+        The static paper figure is <a href="static/images/fig2_architecture.png" target="_blank" rel="noreferrer">here</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Dataset ===================== -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">A 4D dataset of diverse dynamics</h2>
+        <div class="content has-text-justified">
+          <p>
+            We contribute a new synthetic dataset of <b>2.9 million frames</b> with dense per-point trajectory
+            annotations, spanning deformable, articulated, and rigid objects with motions driven by randomized
+            interactions. For evaluation of zero-shot sim-to-real transfer, we also collect a real-world set of
+            <b>14 objects and 124 interactions</b>, with trajectory labels from FoundationStereo and CoTracker3.
+            We release the dataset, all code, and checkpoints.
+          </p>
+        </div>
+        <div id="dataset-gallery"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Results: synthetic ===================== -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column">
+        <h2 class="title is-3">Simple transformers beat bespoke architectures</h2>
+        <div class="content has-text-justified">
+          <p>
+            On held-out samples of our synthetic dataset, every PointZero variant outperforms every baseline on every
+            metric and object category, when all methods are trained on the same data with identical inputs and
+            supervision. The JiT training objective consistently beats both direct regression and flow matching,
+            suggesting it better captures the multimodal distribution over plausible point trajectories.
+          </p>
+        </div>
+        <div class="results-table-container">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th colspan="4" class="grp">Deformable</th>
+                <th colspan="4" class="grp">Articulated</th>
+                <th colspan="4" class="grp">Rigid</th>
+              </tr>
+              <tr>
+                <th></th>
+                <th class="grp">MDE&darr;</th><th>MSE&darr;</th><th>CD&darr;</th><th>EMD&darr;</th>
+                <th class="grp">MDE&darr;</th><th>MSE&darr;</th><th>CD&darr;</th><th>EMD&darr;</th>
+                <th class="grp">MDE&darr;</th><th>MSE&darr;</th><th>CD&darr;</th><th>EMD&darr;</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>GBND</td><td class="grp">1.74</td><td>0.21</td><td>1.49</td><td>1.91</td><td class="grp">1.11</td><td>0.22</td><td>1.48</td><td>1.12</td><td class="grp">15.57</td><td>25.33</td><td>18.66</td><td>14.07</td></tr>
+              <tr><td>ParticleFormer</td><td class="grp">1.73</td><td>0.21</td><td>1.48</td><td>1.91</td><td class="grp">1.09</td><td>0.22</td><td>1.42</td><td>1.09</td><td class="grp">15.50</td><td>25.35</td><td>18.55</td><td>14.06</td></tr>
+              <tr><td>PGND</td><td class="grp">0.90</td><td>0.05</td><td>0.41</td><td>0.81</td><td class="grp">0.87</td><td>0.07</td><td>0.54</td><td>0.82</td><td class="grp">6.76</td><td>4.13</td><td>3.36</td><td>5.31</td></tr>
+              <tr><td>PTv3</td><td class="grp">0.92</td><td>0.05</td><td>0.39</td><td>0.92</td><td class="grp">0.83</td><td>0.08</td><td>0.53</td><td>0.82</td><td class="grp">6.23</td><td>3.85</td><td>3.00</td><td>5.16</td></tr>
+              <tr><td>PointZero-FM</td><td class="grp">0.74</td><td>0.03</td><td>0.33</td><td>0.66</td><td class="grp">0.63</td><td>0.05</td><td>0.39</td><td>0.60</td><td class="grp">5.15</td><td>2.74</td><td>2.50</td><td>4.81</td></tr>
+              <tr><td>PointZero-Regression</td><td class="grp">0.47</td><td class="best">0.01</td><td>0.20</td><td>0.42</td><td class="grp">0.54</td><td>0.03</td><td>0.35</td><td>0.52</td><td class="grp">4.20</td><td>2.03</td><td>2.09</td><td>3.95</td></tr>
+              <tr class="ours"><td><span class="pointzero">PointZero</span>-JiT</td><td class="grp best">0.42</td><td class="best">0.01</td><td class="best">0.18</td><td class="best">0.36</td><td class="grp best">0.30</td><td class="best">0.02</td><td class="best">0.19</td><td class="best">0.28</td><td class="grp best">3.24</td><td class="best">1.48</td><td class="best">1.54</td><td class="best">2.90</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-note">Dynamics prediction errors on held-out samples of our synthetic dataset. All baselines were trained on the proposed dataset. <b>Bold</b> marks the best result per column.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Post-training ===================== -->
+<section class="section" style="padding-bottom:0;">
+  <div class="container is-max-desktop has-text-centered">
+    <h2 class="title is-2">Post-training</h2>
+    <p class="subtitle is-6" style="color:#6b7280;">The same pre-trained model, fine-tuned two ways:
+    action-conditioned dynamics, then robot manipulation.</p>
+  </div>
+</section>
+
+<!-- ===================== Results: dynamics ===================== -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column">
+        <h2 class="title is-3">Action-conditioned dynamics prediction</h2>
+        <div class="content has-text-justified">
+          <p>
+            Fine-tuned to condition on robot end-effector state, PointZero outperforms strong scene-specific baselines
+            on the PGND benchmark of six real robot&ndash;object interaction scenes. Pre-training is critical:
+            the identical architecture trained from scratch (PointZero-Scratch) is far behind.
+          </p>
+        </div>
+        <div id="wam-viewer" data-pz-viewer="ctx" class="pz-section-viewer"></div>
+        <p class="pz-note">Predicted object dynamics inside the original 4D capture, conditioned on the robot end-effector.</p>
+
+        <div class="results-table-container">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th colspan="3" class="grp">Bread</th><th colspan="3" class="grp">Paperbag</th><th colspan="3" class="grp">Cloth</th>
+                <th colspan="3" class="grp">Box</th><th colspan="3" class="grp">Rope</th><th colspan="3" class="grp">Sloth</th>
+              </tr>
+              <tr>
+                <th></th>
+                <th class="grp">MDE&darr;</th><th>CD&darr;</th><th>EMD&darr;</th>
+                <th class="grp">MDE&darr;</th><th>CD&darr;</th><th>EMD&darr;</th>
+                <th class="grp">MDE&darr;</th><th>CD&darr;</th><th>EMD&darr;</th>
+                <th class="grp">MDE&darr;</th><th>CD&darr;</th><th>EMD&darr;</th>
+                <th class="grp">MDE&darr;</th><th>CD&darr;</th><th>EMD&darr;</th>
+                <th class="grp">MDE&darr;</th><th>CD&darr;</th><th>EMD&darr;</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>GBND</td><td class="grp">3.1</td><td>3.1</td><td>1.6</td><td class="grp">3.0</td><td>4.2</td><td>1.6</td><td class="grp">7.7</td><td>8.3</td><td>3.5</td><td class="grp">4.5</td><td>6.2</td><td>3.2</td><td class="grp">6.2</td><td>7.3</td><td>3.6</td><td class="grp">7.8</td><td>6.4</td><td>3.2</td></tr>
+              <tr><td>PGND</td><td class="grp">2.0</td><td>1.8</td><td>1.0</td><td class="grp best">1.6</td><td>2.1</td><td>0.9</td><td class="grp">4.5</td><td>4.3</td><td>2.2</td><td class="grp best">2.2</td><td class="best">1.5</td><td>1.6</td><td class="grp">3.9</td><td>3.8</td><td>2.1</td><td class="grp">4.3</td><td>3.3</td><td>1.7</td></tr>
+              <tr><td>PointZero-Scratch</td><td class="grp">4.2</td><td>3.9</td><td>1.9</td><td class="grp">4.2</td><td>4.4</td><td>1.9</td><td class="grp">5.6</td><td>4.7</td><td>2.1</td><td class="grp">3.7</td><td>3.9</td><td>2.1</td><td class="grp">9.3</td><td>10.8</td><td>5.0</td><td class="grp">7.3</td><td>5.9</td><td>2.8</td></tr>
+              <tr class="ours"><td><span class="pointzero">PointZero</span></td><td class="grp best">1.5</td><td class="best">1.1</td><td class="best">0.6</td><td class="grp best">1.6</td><td class="best">2.0</td><td class="best">0.8</td><td class="grp best">4.0</td><td class="best">3.4</td><td class="best">1.5</td><td class="grp">2.4</td><td>2.7</td><td class="best">1.4</td><td class="grp best">3.3</td><td class="best">3.3</td><td class="best">1.6</td><td class="grp best">3.9</td><td class="best">3.1</td><td class="best">1.5</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-note">Prediction errors in centimeters on the PGND benchmark. <b>Bold</b> marks the best result per column.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Results: manipulation ===================== -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Robot manipulation</h2>
+        <div class="content has-text-justified">
+          <p>
+            With a lightweight action head, fine-tuned PointZero drives imitation-learning policies from just 20 expert
+            demonstrations per task. It achieves the highest success rate on 6 of 7 simulated and real-world
+            manipulation tasks, with a <b>45.5% higher average success rate</b> than the best behavior-cloning baseline.
+          </p>
+        </div>
+        <div id="il-viewer" data-pz-viewer="sim" class="pz-section-viewer"></div>
+        <p class="pz-note">Policy rollouts in simulation, in 3D &mdash; successful episodes under the paper's evaluation protocol.</p>
+
+        <div class="results-table-container">
+          <table class="results-table">
+            <thead>
+              <tr><th>Task</th><th>3PoinTr</th><th>DP3</th><th>DP</th><th>ATM</th><th><span class="pointzero">PointZero</span>-FT</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Blockstack (sim)</td><td>90.9</td><td>44.4</td><td>45.4</td><td>40.0</td><td class="best">99.8</td></tr>
+              <tr><td>Microwave (sim)</td><td>80.8</td><td>31.4</td><td>32.0</td><td>30.4</td><td class="best">93.1</td></tr>
+              <tr><td>Glass (sim)</td><td>95.2</td><td>74.9</td><td>57.5</td><td>3.9</td><td class="best">95.9</td></tr>
+              <tr><td>Drawer (real)</td><td>90.0</td><td>70.0</td><td>&ndash;</td><td>&ndash;</td><td class="best">100.0</td></tr>
+              <tr><td>Cup (real)</td><td class="best">100.0</td><td>80.0</td><td>&ndash;</td><td>&ndash;</td><td class="best">100.0</td></tr>
+              <tr><td>Paper (real)</td><td class="best">90.0</td><td>10.0</td><td>&ndash;</td><td>&ndash;</td><td>70.0</td></tr>
+              <tr><td>Sock (real)</td><td class="best">90.0</td><td>20.0</td><td>&ndash;</td><td>&ndash;</td><td class="best">90.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-note">Imitation-learning success rates (%). <b>Bold</b> marks the best result per task; &ldquo;&ndash;&rdquo; indicates baselines not run on real-world tasks.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== BibTeX ===================== -->
+<section class="section" id="bibtex">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre class="bib-block"><code>@article{duisterhof2026pointzero,
+  title   = {PointZero: 3D Point Track Completion for Learning Transferable 3D Dynamics},
+  author  = {Duisterhof, Bardienus P. and Zhang, Kaifeng and Hung, Adam and Wen, Bowen and
+             Birchfield, Stan and Li, Yunzhu and Ramanan, Deva and Ichnowski, Jeffrey},
+  journal = {arXiv preprint arXiv:XXXX.XXXXX},
+  year    = {2026}
+}</code></pre>
+  </div>
+</section>
+
+<!-- ===================== Footer ===================== -->
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content" style="text-align: center;">
+          <p>
+            Website template adapted from <a href="https://nerfies.github.io" target="_blank" rel="noreferrer">Nerfies</a>,
+            licensed under <a href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="static/js/three.min.js"></script>
+<script src="static/js/hero.js?v=27"></script>
+<script src="static/js/method.js?v=19"></script>
+<script src="static/js/charts.js?v=1"></script>
+<script src="static/js/gallery.js?v=1"></script>
+</body>
+</html>
