@@ -86,9 +86,8 @@
   <div class="container is-max-widescreen">
     <div class="hero-body">
       <div id="hero-viewer" data-pz-viewer="pre"></div>
-      <p class="pz-note">Live in-browser playback of PointZero's predictions (best of 10 samples, following the paper's
-      evaluation protocol). Real-scene clouds are densified for display from the model's 1,000 predicted point tracks;
-      conditioning tracks shown in orange.</p>
+      <p class="pz-note">Live in-browser playback of PointZero's predictions. Real-scene clouds are densified
+      for display from the model's 1,000 predicted point tracks; conditioning tracks shown in orange.</p>
       <h2 class="subtitle has-text-centered section-tagline">
         <span class="pointzero">PointZero</span> learns transferable 3D dynamics by completing 3D point tracks &mdash; no robot action labels required.
         Above: live predictions on real scenes, zero-shot &mdash; no fine-tuning, no robot data.
@@ -206,17 +205,17 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>GBND</td><td class="grp">1.74</td><td>0.21</td><td>1.49</td><td>1.91</td><td class="grp">1.11</td><td>0.22</td><td>1.48</td><td>1.12</td><td class="grp">15.57</td><td>25.33</td><td>18.66</td><td>14.07</td></tr>
-              <tr><td>ParticleFormer</td><td class="grp">1.73</td><td>0.21</td><td>1.48</td><td>1.91</td><td class="grp">1.09</td><td>0.22</td><td>1.42</td><td>1.09</td><td class="grp">15.50</td><td>25.35</td><td>18.55</td><td>14.06</td></tr>
-              <tr><td>PGND</td><td class="grp">0.90</td><td>0.05</td><td>0.41</td><td>0.81</td><td class="grp">0.87</td><td>0.07</td><td>0.54</td><td>0.82</td><td class="grp">6.76</td><td>4.13</td><td>3.36</td><td>5.31</td></tr>
-              <tr><td>PTv3</td><td class="grp">0.92</td><td>0.05</td><td>0.39</td><td>0.92</td><td class="grp">0.83</td><td>0.08</td><td>0.53</td><td>0.82</td><td class="grp">6.23</td><td>3.85</td><td>3.00</td><td>5.16</td></tr>
-              <tr><td>PointZero-FM</td><td class="grp">0.74</td><td>0.03</td><td>0.33</td><td>0.66</td><td class="grp">0.63</td><td>0.05</td><td>0.39</td><td>0.60</td><td class="grp">5.15</td><td>2.74</td><td>2.50</td><td>4.81</td></tr>
-              <tr><td>PointZero-Regression</td><td class="grp">0.47</td><td class="best">0.01</td><td>0.20</td><td>0.42</td><td class="grp">0.54</td><td>0.03</td><td>0.35</td><td>0.52</td><td class="grp">4.20</td><td>2.03</td><td>2.09</td><td>3.95</td></tr>
-              <tr class="ours"><td><span class="pointzero">PointZero</span>-JiT</td><td class="grp best">0.42</td><td class="best">0.01</td><td class="best">0.18</td><td class="best">0.36</td><td class="grp best">0.30</td><td class="best">0.02</td><td class="best">0.19</td><td class="best">0.28</td><td class="grp best">3.24</td><td class="best">1.48</td><td class="best">1.54</td><td class="best">2.90</td></tr>
+              <tr><td>GBND</td><td class="grp">17.4</td><td>6.3</td><td>14.9</td><td>19.1</td><td class="grp">11.1</td><td>6.6</td><td>14.8</td><td>11.2</td><td class="grp">155.7</td><td>759.9</td><td>186.6</td><td>140.7</td></tr>
+              <tr><td>ParticleFormer</td><td class="grp">17.3</td><td>6.3</td><td>14.8</td><td>19.1</td><td class="grp">10.9</td><td>6.6</td><td>14.2</td><td>10.9</td><td class="grp">155.0</td><td>760.5</td><td>185.5</td><td>140.6</td></tr>
+              <tr><td>PGND</td><td class="grp">9.0</td><td>1.5</td><td>4.1</td><td>8.1</td><td class="grp">8.7</td><td>2.1</td><td>5.4</td><td>8.2</td><td class="grp">67.6</td><td>123.9</td><td>33.6</td><td>53.1</td></tr>
+              <tr><td>PTv3</td><td class="grp">9.2</td><td>1.5</td><td>3.9</td><td>9.2</td><td class="grp">8.3</td><td>2.4</td><td>5.3</td><td>8.2</td><td class="grp">62.3</td><td>115.5</td><td>30.0</td><td>51.6</td></tr>
+              <tr><td><span class="pointzero">PointZero</span>-FM</td><td class="grp">5.9</td><td>0.6</td><td>2.5</td><td>5.1</td><td class="grp">4.6</td><td class="best">0.6</td><td>2.9</td><td>4.3</td><td class="grp">37.7</td><td>51.0</td><td>17.3</td><td>34.0</td></tr>
+              <tr><td><span class="pointzero">PointZero</span>-Regression</td><td class="grp">4.7</td><td class="best">0.3</td><td>2.0</td><td>4.2</td><td class="grp">5.4</td><td>0.9</td><td>3.5</td><td>5.2</td><td class="grp">42.0</td><td>60.9</td><td>20.9</td><td>39.5</td></tr>
+              <tr class="ours"><td><span class="pointzero">PointZero</span>-JiT</td><td class="grp best">4.2</td><td class="best">0.3</td><td class="best">1.8</td><td class="best">3.6</td><td class="grp best">3.0</td><td class="best">0.6</td><td class="best">1.9</td><td class="best">2.8</td><td class="grp best">32.4</td><td class="best">44.4</td><td class="best">15.4</td><td class="best">29.0</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="table-note">Dynamics prediction errors on held-out samples of our synthetic dataset. All baselines were trained on the proposed dataset. <b>Bold</b> marks the best result per column.</p>
+        <p class="table-note">Dynamics prediction errors on held-out samples of our synthetic dataset. All baselines were trained on the proposed dataset. MDE, CD and EMD are in centimetres; MSE is in 10<sup>&minus;2</sup>&nbsp;m<sup>2</sup>. <b>Bold</b> marks the best result per column.</p>
       </div>
     </div>
   </div>
@@ -268,8 +267,8 @@
             <tbody>
               <tr><td>GBND</td><td class="grp">3.1</td><td>3.1</td><td>1.6</td><td class="grp">3.0</td><td>4.2</td><td>1.6</td><td class="grp">7.7</td><td>8.3</td><td>3.5</td><td class="grp">4.5</td><td>6.2</td><td>3.2</td><td class="grp">6.2</td><td>7.3</td><td>3.6</td><td class="grp">7.8</td><td>6.4</td><td>3.2</td></tr>
               <tr><td>PGND</td><td class="grp">2.0</td><td>1.8</td><td>1.0</td><td class="grp best">1.6</td><td>2.1</td><td>0.9</td><td class="grp">4.5</td><td>4.3</td><td>2.2</td><td class="grp best">2.2</td><td class="best">1.5</td><td>1.6</td><td class="grp">3.9</td><td>3.8</td><td>2.1</td><td class="grp">4.3</td><td>3.3</td><td>1.7</td></tr>
-              <tr><td>PointZero-Scratch</td><td class="grp">4.2</td><td>3.9</td><td>1.9</td><td class="grp">4.2</td><td>4.4</td><td>1.9</td><td class="grp">5.6</td><td>4.7</td><td>2.1</td><td class="grp">3.7</td><td>3.9</td><td>2.1</td><td class="grp">9.3</td><td>10.8</td><td>5.0</td><td class="grp">7.3</td><td>5.9</td><td>2.8</td></tr>
-              <tr class="ours"><td><span class="pointzero">PointZero</span></td><td class="grp best">1.5</td><td class="best">1.1</td><td class="best">0.6</td><td class="grp best">1.6</td><td class="best">2.0</td><td class="best">0.8</td><td class="grp best">4.0</td><td class="best">3.4</td><td class="best">1.5</td><td class="grp">2.4</td><td>2.7</td><td class="best">1.4</td><td class="grp best">3.3</td><td class="best">3.3</td><td class="best">1.6</td><td class="grp best">3.9</td><td class="best">3.1</td><td class="best">1.5</td></tr>
+              <tr><td><span class="pointzero">PointZero</span>-Scratch</td><td class="grp">4.2</td><td>3.9</td><td>1.9</td><td class="grp">4.2</td><td>4.4</td><td>1.9</td><td class="grp">5.6</td><td>4.7</td><td>2.1</td><td class="grp">3.7</td><td>3.9</td><td>2.1</td><td class="grp">9.3</td><td>10.8</td><td>5.0</td><td class="grp">7.3</td><td>5.9</td><td>2.8</td></tr>
+              <tr class="ours"><td><span class="pointzero">PointZero</span>-FT</td><td class="grp best">1.5</td><td class="best">1.1</td><td class="best">0.6</td><td class="grp best">1.6</td><td class="best">2.0</td><td class="best">0.8</td><td class="grp best">4.0</td><td class="best">3.4</td><td class="best">1.5</td><td class="grp">2.4</td><td>2.7</td><td class="best">1.4</td><td class="grp best">3.3</td><td class="best">3.3</td><td class="best">1.6</td><td class="grp best">3.9</td><td class="best">3.0</td><td class="best">1.5</td></tr>
             </tbody>
           </table>
         </div>
@@ -289,7 +288,7 @@
           <p>
             With a lightweight action head, fine-tuned PointZero drives imitation-learning policies from just 20 expert
             demonstrations per task. It achieves the highest success rate on 6 of 7 simulated and real-world
-            manipulation tasks, with a <b>45.5% higher average success rate</b> than the best behavior-cloning baseline.
+            manipulation tasks, and beats the strongest behavior-cloning baseline on every one.
           </p>
         </div>
         <div id="il-viewer" data-pz-viewer="sim" class="pz-section-viewer"></div>
