@@ -2,7 +2,7 @@
 
 Source for the PointZero project page: **https://pointzero-wam.github.io**
 
-*PointZero: 3D Point Track Completion for Learning Transferable 3D Dynamics*
+*PointZero: 3D Point Track Completion as a Spatiotemporal Pre-Training Objective*
 
 Static site — no build step. Open `index.html`, or serve the directory:
 
