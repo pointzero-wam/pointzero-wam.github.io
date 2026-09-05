@@ -382,15 +382,8 @@
       anim.trkFrames = d.varFrames[anim.variant];
       anim.trkLerp = new Float32Array(man.n_trk * 3);
       addEEF(man, diag, true);
-      if (anim.variants.length > 1) {
-        variantSel.innerHTML = anim.variants.map(function (v, i) {
-          return '<option value="' + i + '">' + v.label + ' · ' + (v.approx ? '≈' : '') + v.mde_mm + ' mm</option>';
-        }).join('');
-        variantSel.value = String(anim.variant);
-        variantSel.style.display = '';
-      } else {
-        variantSel.style.display = 'none';
-      }
+      // the teaser shows the best entry per scene; no model picker on the page
+      variantSel.style.display = 'none';
       updateRealLegend();
     } else if (man.kind === 'ctx') {
       var bgP = makePoints(d.bgFrames[0], colorsToAttr(d.bgColFrames[0], man.n_bg, d.gain), diag * 0.0180, 0.9);
@@ -432,8 +425,9 @@
   function updateRealLegend() {
     if (!anim || anim.kind !== 'real') return;
     var v = anim.variants[anim.variant] || { mde_mm: '?', label: '' };
+    // variant name dropped along with the picker - it was only there to explain it
     legendEl.innerHTML = '<span class="pz-dot" style="background:#e0662a"></span> conditioning tracks &nbsp;&nbsp;<span class="pz-dot pz-dot-rgb"></span> predicted scene motion' +
-      ' &nbsp;&middot;&nbsp; ' + v.label + ' &nbsp;&middot;&nbsp; mean error ' + (v.approx ? '≈' : '') + v.mde_mm + ' mm';
+      ' &nbsp;&middot;&nbsp; mean error ' + (v.approx ? '≈' : '') + v.mde_mm + ' mm';
   }
   variantSel.addEventListener('change', function () {
     if (anim && anim.kind === 'real') {
@@ -585,6 +579,14 @@
       b.textContent = manifest.scenes[k].label;
       tabsEl.appendChild(b);
     });
+    // lay the pills out as two even rows instead of letting them wrap ragged
+    if (keys.length > 5) {
+      tabsEl.classList.add('is-grid');
+      tabsEl.style.gridTemplateColumns = 'repeat(' + Math.ceil(keys.length / 2) + ', auto)';
+    } else {
+      tabsEl.classList.remove('is-grid');
+      tabsEl.style.gridTemplateColumns = '';
+    }
     select(sceneKey && keys.indexOf(sceneKey) >= 0 ? sceneKey : keys[0]);
   }
   modesEl.addEventListener('click', function (e) {

@@ -27,7 +27,7 @@
         d.innerHTML =
           '<video muted loop playsinline preload="none" poster="static/dataset/' + c.poster + '">' +
           '<source src="static/dataset/' + c.file + '" type="video/mp4"></video>' +
-          '<figcaption>' + c.category + '<span>' + c.subset.replace(/_v\d+$/, '').replace(/_/g, ' ') + '</span></figcaption>';
+          '<figcaption>' + c.category + '</figcaption>';
         grid.appendChild(d);
       });
       var vids = grid.querySelectorAll('video');

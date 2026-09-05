@@ -322,35 +322,8 @@
   ],
   "unit": "success rate % (higher is better)",
   "facet": false,
-  "note": "20 demonstrations per task. DP and ATM were not run on the real-world tasks (gaps).",
+  "note": "20 demonstrations per task. DP is omitted — it was not run on the real-world tasks.",
   "series": [
-   {
-    "name": "3PoinTr",
-    "color": "#2a78d6",
-    "data": {
-     "Blockstack (sim)": {
-      "SR": 90.9
-     },
-     "Microwave (sim)": {
-      "SR": 80.8
-     },
-     "Glass (sim)": {
-      "SR": 95.2
-     },
-     "Drawer (real)": {
-      "SR": 90.0
-     },
-     "Cup (real)": {
-      "SR": 100.0
-     },
-     "Paper (real)": {
-      "SR": 90.0
-     },
-     "Sock (real)": {
-      "SR": 90.0
-     }
-    }
-   },
    {
     "name": "DP3",
     "color": "#1baf7a",
@@ -379,33 +352,6 @@
     }
    },
    {
-    "name": "DP",
-    "color": "#eda100",
-    "data": {
-     "Blockstack (sim)": {
-      "SR": 45.4
-     },
-     "Microwave (sim)": {
-      "SR": 32.0
-     },
-     "Glass (sim)": {
-      "SR": 57.5
-     },
-     "Drawer (real)": {
-      "SR": null
-     },
-     "Cup (real)": {
-      "SR": null
-     },
-     "Paper (real)": {
-      "SR": null
-     },
-     "Sock (real)": {
-      "SR": null
-     }
-    }
-   },
-   {
     "name": "ATM",
     "color": "#4a3aa7",
     "data": {
@@ -419,16 +365,43 @@
       "SR": 3.9
      },
      "Drawer (real)": {
-      "SR": null
+      "SR": 30.0
      },
      "Cup (real)": {
-      "SR": null
+      "SR": 30.0
      },
      "Paper (real)": {
-      "SR": null
+      "SR": 0.0
      },
      "Sock (real)": {
-      "SR": null
+      "SR": 0.0
+     }
+    }
+   },
+   {
+    "name": "3PoinTr",
+    "color": "#2a78d6",
+    "data": {
+     "Blockstack (sim)": {
+      "SR": 90.9
+     },
+     "Microwave (sim)": {
+      "SR": 80.8
+     },
+     "Glass (sim)": {
+      "SR": 95.2
+     },
+     "Drawer (real)": {
+      "SR": 90.0
+     },
+     "Cup (real)": {
+      "SR": 100.0
+     },
+     "Paper (real)": {
+      "SR": 90.0
+     },
+     "Sock (real)": {
+      "SR": 90.0
      }
     }
    },

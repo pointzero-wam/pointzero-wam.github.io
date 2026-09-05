@@ -16,18 +16,14 @@
 
   root.innerHTML =
     '<div class="mf-head">' +
-    '  <select class="mf-select">' +
-    '    <option value="schematic">Concept A · live 3D pipeline</option>' +
-    '    <option value="attention">Concept B · token &amp; attention explorer</option>' +
-    '    <option value="live">Concept C · pipeline on the input image</option>' +
-    '  </select>' +
     '  <span class="mf-hint"></span>' +
     '</div>' +
     '<div class="mf-stage"></div>' +
     '<div class="mf-info"><span class="mf-info-title"></span>' +
     '<span class="mf-info-body"></span></div>';
 
-  var sel = root.querySelector('.mf-select');
+  // pinned to concept A; B and C stay in the file but are no longer offered
+  var sel = { value: 'schematic', addEventListener: function () {} };
   var stage = root.querySelector('.mf-stage');
   var hintEl = root.querySelector('.mf-hint');
   var infoT = root.querySelector('.mf-info-title');
@@ -432,19 +428,19 @@
   // ---------------------------------------------------------------- concept A
   var CARDS = {
     cloud: { title: 'Observed point cloud',
-      body: 'A single RGB-D frame, unprojected into 3D. Every one of these points gets its own predicted future trajectory — nothing about the object is known in advance.' },
+      body: 'A single RGB-D frame, unprojected into 3D. We predict a future 3D trajectory for each observed point.' },
     track: { title: 'Partial point tracks',
-      body: 'A small number of complete trajectories (orange) are supplied as conditioning — often just one. That is the whole motion cue: no robot actions, no physics parameters. After fine-tuning, robot end-effector pose can take this slot instead.' },
+      body: 'A small number of complete trajectories (orange) are supplied as conditioning, 1-3 trajectories in practice.' },
     dino: { title: 'DINOv2 features',
-      body: 'Patch features from a frozen DINOv2, shown as their first three principal components — actually computed on this scene. The object separates from the floor with no supervision.' },
+      body: 'Features from a frozen DINOv2 encoder. We find this helps a single checkpoint distinguish between object categories.' },
     perceiver: { title: 'Perceiver-IO',
-      body: 'Far too many patch features to attend over directly. A set of learned latent queries reads the grid and compresses it down to a handful of visual tokens.' },
+      body: 'We use a perceiver-IO to reduce the total number of visual tokens to just 4 tokens.' },
     denoise: { title: 'Denoising transformer',
-      body: 'The trajectories start as pure noise and are denoised into clean motion. Layers alternate between attention within a single point’s own trajectory and attention across the whole scene — the points, the conditioning tracks and the image.' },
+      body: 'The trajectories start as pure noise and are denoised into clean motion. Layers alternate between point attention (between point tokens only), and global attention with all available tokens.'  },
     pred: { title: 'Dense 3D point tracks',
-      body: 'The pre-training output: a future trajectory for every observed point. Real model output, playing live.' },
+      body: 'The pre-training output: a future trajectory for every observed point.' },
     wam: { title: 'Action-conditioned dynamics',
-      body: 'Fine-tuned to condition on robot end-effector pose instead of point tracks, the model predicts how the object responds to the robot — shown here inside the original captured scene.' },
+      body: 'Fine-tuned to condition on robot end-effector pose instead of point tracks, the model predicts how the object responds to the robot.' },
     sim: { title: 'Robot manipulation',
       body: 'With a lightweight action head the same model predicts robot action chunks — a real policy rollout in simulation, in 3D.' }
   };
@@ -723,7 +719,7 @@
   }
 
   var BUILD = { schematic: buildSchematic, attention: buildAttention, live: buildLive };
-  sel.addEventListener('change', function () { BUILD[sel.value](); });
+
   var mfp = new URLSearchParams(location.search).get('mf');
-  if (mfp && BUILD[mfp]) { sel.value = mfp; BUILD[mfp](); } else { buildSchematic(); }
+  buildSchematic();
 })();

@@ -628,7 +628,7 @@ text.ch-glabel { font-family: 'Noto Sans', sans-serif; font-size: 11px; fill: #4
   position: absolute; left: 0; right: 0; bottom: 0;
   background: linear-gradient(transparent, rgba(10,11,13,0.8));
   color: #fff; font-size: 0.72rem; padding: 1.1rem 0.5rem 0.35rem;
-  display: flex; justify-content: space-between; text-transform: capitalize;
+  text-transform: capitalize;
 }
 .dg-item figcaption span { color: rgba(255,255,255,0.6); }
 .dg-note { font-size: 0.82rem; color: #8a8f98; text-align: center; margin-top: 0.8rem; }
@@ -827,3 +827,67 @@ text.mf-layer-xl { font-family: 'Google Sans', sans-serif; font-size: 10px; font
 .mf-step-b.is-on .mf-step-stack i.is-p { background: rgba(63,127,191,0.95); }
 .mf-step-b.is-on .mf-step-stack i.is-g { background: rgba(138,99,196,0.95); }
 .mf-step-sub { font-size: 0.5rem; color: #9aa0a6; text-align: center; }
+
+/* ---- policy rollout videos (replaces the 3D sim viewer) ---- */
+.policy-videos { margin-top: 1.25rem; }
+.policy-group-label {
+  font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #8a8f98; margin: 1.1rem 0 0.5rem; font-weight: 600;
+}
+.policy-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.policy-grid.is-2x2 {
+  grid-template-columns: repeat(2, 1fr); max-width: 620px; margin: 0 auto;
+}
+.policy-item { margin: 0; }
+.policy-item video {
+  width: 100%; display: block; border-radius: 10px; background: #eef1f5;
+  aspect-ratio: 16 / 9; object-fit: cover;
+}
+.policy-item figcaption {
+  font-size: 0.85rem; color: #555; margin-top: 0.35rem; text-align: center;
+}
+@media screen and (max-width: 600px) {
+  .policy-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---- multi-sample (multimodality) widget ---- */
+.mm-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 1rem;
+}
+.mm-cell { margin: 0; }
+.mm-cell canvas {
+  width: 100%; aspect-ratio: 16 / 10; display: block; border-radius: 10px;
+  background: linear-gradient(#ffffff, #e9edf4);
+}
+.mm-cell.is-unc canvas { box-shadow: 0 0 0 2px #e0662a inset; }
+.mm-cell figcaption {
+  font-size: 0.82rem; color: #666; text-align: center; margin-top: 0.3rem;
+}
+.mm-cell.is-unc figcaption { color: #c2521f; font-weight: 600; }
+.mm-legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 1.1rem;
+  justify-content: center; margin-top: 0.9rem; font-size: 0.85rem; color: #666;
+}
+.mm-key { display: inline-flex; align-items: center; gap: 0.4rem; }
+.mm-sw { width: 15px; height: 15px; border-radius: 50%; display: inline-block; }
+.mm-sw-lo { background: #265aa0; }
+.mm-sw-hi { background: #d23c28; }
+.mm-note-i { font-style: italic; color: #8a8f98; }
+@media screen and (max-width: 700px) {
+  .mm-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* two even rows of scene pills (column count set from the tab count in hero.js) */
+.pz-tabs.is-grid {
+  display: grid;
+  justify-content: center;
+  justify-items: stretch;
+  gap: 0.45rem 0.6rem;
+}
+.pz-tabs.is-grid .pz-tab { width: 100%; }
+@media screen and (max-width: 700px) {
+  .pz-tabs.is-grid { display: flex; flex-wrap: wrap; }
+  .pz-tabs.is-grid .pz-tab { width: auto; }
+}

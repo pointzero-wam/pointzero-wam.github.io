@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
-  <link rel="stylesheet" href="static/css/index.css?v=24">
+  <link rel="stylesheet" href="static/css/index.css?v=29">
 </head>
 <body>
 
@@ -25,12 +25,14 @@
     <div class="container is-max-desktop">
       <div class="columns is-centered">
         <div class="column has-text-centered">
-          <h1 class="title is-1 publication-title">PointZero: 3D Point Track Completion as a Spatiotemporal Pre-Training Objective</h1>
+          <h1 class="title is-1 publication-title"><span style="color:#00649c">P</span><span style="color:#0048b8">o</span><span style="color:#002cd4">i</span><span style="color:#000ff0">n</span><span style="color:#1300ec">t</span><span style="color:#3d00c2">Z</span><span style="color:#670098">e</span><span style="color:#91006e">r</span><span style="color:#bf0040">o</span>: 3D Point Track Completion as a Spatiotemporal Pre-Training Objective</h1>
           <div class="is-size-5 publication-authors">
             <span class="author-block"><a href="https://bart-ai.com" target="_blank" rel="noreferrer">Bardienus P. Duisterhof</a><sup>1</sup>,</span>
             <span class="author-block"><a href="https://kywind.github.io" target="_blank" rel="noreferrer">Kaifeng Zhang</a><sup>2</sup>,</span>
             <span class="author-block"><a href="https://adamhung60.github.io" target="_blank" rel="noreferrer">Adam Hung</a><sup>1</sup>,</span>
             <span class="author-block"><a href="https://wenbowen123.github.io" target="_blank" rel="noreferrer">Bowen Wen</a><sup>3</sup>,</span>
+          </div>
+          <div class="is-size-5 publication-authors">
             <span class="author-block"><a href="https://research.nvidia.com/person/stan-birchfield" target="_blank" rel="noreferrer">Stan Birchfield</a><sup>3</sup>,</span>
             <span class="author-block"><a href="https://yunzhuli.github.io" target="_blank" rel="noreferrer">Yunzhu Li</a><sup>2</sup>,</span>
             <span class="author-block"><a href="https://www.cs.cmu.edu/~deva/" target="_blank" rel="noreferrer">Deva Ramanan</a><sup>1</sup>,</span>
@@ -58,13 +60,13 @@
               <span class="link-block">
                 <a href="#" class="external-link button is-normal is-rounded is-dark">
                   <span class="icon"><i class="fab fa-github"></i></span>
-                  <span>Code</span>
+                  <span>Code (Coming Soon)</span>
                 </a>
               </span>
               <span class="link-block">
                 <a href="#" class="external-link button is-normal is-rounded is-dark">
                   <span class="icon">&#129303;</span>
-                  <span>Dataset</span>
+                  <span>Dataset (Coming Soon)</span>
                 </a>
               </span>
               <span class="link-block">
@@ -86,10 +88,9 @@
   <div class="container is-max-widescreen">
     <div class="hero-body">
       <div id="hero-viewer" data-pz-viewer="pre"></div>
-      <p class="pz-note">Live in-browser playback of PointZero's predictions. Real-scene clouds are densified
-      for display from the model's 1,000 predicted point tracks; conditioning tracks shown in orange.</p>
+      <p class="pz-note">Live in-browser playback of PointZero's predictions. Conditioning tracks shown in orange.</p>
       <h2 class="subtitle has-text-centered section-tagline">
-        <span class="pointzero">PointZero</span> learns transferable 3D dynamics by completing 3D point tracks &mdash; no robot action labels required.
+        <span class="pointzero">PointZero</span> learns transferable 3D dynamics by completing 3D point tracks and without any robot action labels.
         Above: live predictions on real scenes, zero-shot &mdash; no fine-tuning, no robot data.
       </h2>
     </div>
@@ -146,7 +147,7 @@
           </p>
         </div>
         <div id="method-figure"></div>
-        <p class="pz-note" style="margin-top:1rem;">Three interactive takes on the method figure &mdash; pick one from the dropdown.
+        <p class="pz-note" style="margin-top:1rem;">Interactive method figure &mdash; hover any panel for detail.
         The static paper figure is <a href="static/images/fig2_architecture.png" target="_blank" rel="noreferrer">here</a>.</p>
       </div>
     </div>
@@ -165,7 +166,7 @@
             annotations, spanning deformable, articulated, and rigid objects with motions driven by randomized
             interactions. For evaluation of zero-shot sim-to-real transfer, we also collect a real-world set of
             <b>14 objects and 124 interactions</b>, with trajectory labels from FoundationStereo and CoTracker3.
-            We release the dataset, all code, and checkpoints.
+            We release the datasets, code, and checkpoints.
           </p>
         </div>
         <div id="dataset-gallery"></div>
@@ -179,12 +180,12 @@
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
       <div class="column">
-        <h2 class="title is-3">Simple transformers beat bespoke architectures</h2>
+        <h2 class="title is-3">Model architecture ablation</h2>
         <div class="content has-text-justified">
           <p>
-            On held-out samples of our synthetic dataset, every PointZero variant outperforms every baseline on every
-            metric and object category, when all methods are trained on the same data with identical inputs and
-            supervision. The JiT training objective consistently beats both direct regression and flow matching,
+            We ablate PointZero, a simple DiT, against existing neural dynamics models trained on the same data.
+            On held-out samples of our synthetic dataset, PointZero outperforms every baseline on every
+            metric and object category. The <a href="https://arxiv.org/abs/2511.13720" target="_blank" rel="noreferrer">JiT</a> training objective consistently beats both direct regression and flow matching,
             suggesting it better captures the multimodal distribution over plausible point trajectories.
           </p>
         </div>
@@ -221,12 +222,13 @@
   </div>
 </section>
 
+<!-- ===================== Multi-sample predictions ===================== -->
+
 <!-- ===================== Post-training ===================== -->
 <section class="section" style="padding-bottom:0;">
   <div class="container is-max-desktop has-text-centered">
     <h2 class="title is-2">Post-training</h2>
-    <p class="subtitle is-6" style="color:#6b7280;">The same pre-trained model, fine-tuned two ways:
-    action-conditioned dynamics, then robot manipulation.</p>
+    <p class="subtitle is-6" style="color:#6b7280;"> We evaluate the utility of the PointZero pre-training objective by post-training it for robotic manipulation. </p>
   </div>
 </section>
 
@@ -238,7 +240,7 @@
         <h2 class="title is-3">Action-conditioned dynamics prediction</h2>
         <div class="content has-text-justified">
           <p>
-            Fine-tuned to condition on robot end-effector state, PointZero outperforms strong scene-specific baselines
+            Post-trained to condition on robot end-effector state, PointZero outperforms strong scene-specific baselines
             on the PGND benchmark of six real robot&ndash;object interaction scenes. Pre-training is critical:
             the identical architecture trained from scratch (PointZero-Scratch) is far behind.
           </p>
@@ -286,31 +288,63 @@
         <h2 class="title is-3">Robot manipulation</h2>
         <div class="content has-text-justified">
           <p>
-            With a lightweight action head, fine-tuned PointZero drives imitation-learning policies from just 20 expert
+            With a lightweight action head, post-trained PointZero drives imitation-learning policies from just 20 expert
             demonstrations per task. It achieves the highest success rate on 6 of 7 simulated and real-world
             manipulation tasks, and beats the strongest behavior-cloning baseline on every one.
           </p>
         </div>
-        <div id="il-viewer" data-pz-viewer="sim" class="pz-section-viewer"></div>
-        <p class="pz-note">Policy rollouts in simulation, in 3D &mdash; successful episodes under the paper's evaluation protocol.</p>
+        <div class="policy-videos">
+          <p class="policy-group-label">Simulation</p>
+          <div class="policy-grid">
+            <figure class="policy-item"><video src="static/videos/policy/sim_blockstack.mp4" autoplay muted loop playsinline preload="metadata"></video><figcaption>Block stacking</figcaption></figure>
+            <figure class="policy-item"><video src="static/videos/policy/sim_openmicrowave.mp4" autoplay muted loop playsinline preload="metadata"></video><figcaption>Open microwave</figcaption></figure>
+            <figure class="policy-item"><video src="static/videos/policy/sim_glass.mp4" autoplay muted loop playsinline preload="metadata"></video><figcaption>Grasp glass</figcaption></figure>
+          </div>
+          <p class="policy-group-label">Real robot</p>
+          <div class="policy-grid is-2x2">
+            <figure class="policy-item"><video src="static/videos/policy/real_drawer.mp4" autoplay muted loop playsinline preload="metadata"></video><figcaption>Open drawer</figcaption></figure>
+            <figure class="policy-item"><video src="static/videos/policy/real_cup.mp4" autoplay muted loop playsinline preload="metadata"></video><figcaption>Grasp cup</figcaption></figure>
+            <figure class="policy-item"><video src="static/videos/policy/real_paper.mp4" autoplay muted loop playsinline preload="metadata"></video><figcaption>Paper into cup</figcaption></figure>
+            <figure class="policy-item"><video src="static/videos/policy/real_fold.mp4" autoplay muted loop playsinline preload="metadata"></video><figcaption>Fold sock</figcaption></figure>
+          </div>
+        </div>
+        <p class="pz-note">Successful policy rollouts under the paper's evaluation protocol. Real-robot clips are played back faster than real time.</p>
 
         <div class="results-table-container">
           <table class="results-table">
             <thead>
-              <tr><th>Task</th><th>3PoinTr</th><th>DP3</th><th>DP</th><th>ATM</th><th><span class="pointzero">PointZero</span>-FT</th></tr>
+              <tr><th>Task</th><th>DP3</th><th>ATM</th><th>3PoinTr</th><th><span class="pointzero">PointZero</span>-FT</th></tr>
             </thead>
             <tbody>
-              <tr><td>Blockstack (sim)</td><td>90.9</td><td>44.4</td><td>45.4</td><td>40.0</td><td class="best">99.8</td></tr>
-              <tr><td>Microwave (sim)</td><td>80.8</td><td>31.4</td><td>32.0</td><td>30.4</td><td class="best">93.1</td></tr>
-              <tr><td>Glass (sim)</td><td>95.2</td><td>74.9</td><td>57.5</td><td>3.9</td><td class="best">95.9</td></tr>
-              <tr><td>Drawer (real)</td><td>90.0</td><td>70.0</td><td>&ndash;</td><td>&ndash;</td><td class="best">100.0</td></tr>
-              <tr><td>Cup (real)</td><td class="best">100.0</td><td>80.0</td><td>&ndash;</td><td>&ndash;</td><td class="best">100.0</td></tr>
-              <tr><td>Paper (real)</td><td class="best">90.0</td><td>10.0</td><td>&ndash;</td><td>&ndash;</td><td>70.0</td></tr>
-              <tr><td>Sock (real)</td><td class="best">90.0</td><td>20.0</td><td>&ndash;</td><td>&ndash;</td><td class="best">90.0</td></tr>
+              <tr><td>Blockstack (sim)</td><td>44.4</td><td>40.0</td><td>90.9</td><td class="best">99.8</td></tr>
+              <tr><td>Microwave (sim)</td><td>31.4</td><td>30.4</td><td>80.8</td><td class="best">93.1</td></tr>
+              <tr><td>Glass (sim)</td><td>74.9</td><td>3.9</td><td>95.2</td><td class="best">95.9</td></tr>
+              <tr><td>Drawer (real)</td><td>70.0</td><td>30.0</td><td>90.0</td><td class="best">100.0</td></tr>
+              <tr><td>Cup (real)</td><td>80.0</td><td>30.0</td><td class="best">100.0</td><td class="best">100.0</td></tr>
+              <tr><td>Paper (real)</td><td>10.0</td><td>0.0</td><td class="best">90.0</td><td>70.0</td></tr>
+              <tr><td>Sock (real)</td><td>20.0</td><td>0.0</td><td class="best">90.0</td><td class="best">90.0</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="table-note">Imitation-learning success rates (%). <b>Bold</b> marks the best result per task; &ldquo;&ndash;&rdquo; indicates baselines not run on real-world tasks.</p>
+        <p class="table-note">Imitation-learning success rates (%). <b>Bold</b> marks the best result per task. DP is omitted &mdash; it was not run on the real-world tasks.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column">
+        <h2 class="title is-3">Sampling diverse dynamics</h2>
+        <div class="content has-text-justified">
+          <p>
+            The JiT objective learns to sample from a <i>distribution</i> of point trajectories given a single RGB-D observation. 
+            Here we show how different seeds lead to plausible yet diverse dynamics. 
+            Different seeds appear to estimate varying stiffness of the lifted towel leading to different motions.
+          </p>
+        </div>
+        <div id="multimodal-figure"></div>
+        <p class="pz-note" style="margin-top:0.9rem;"></p>
       </div>
     </div>
   </div>
@@ -347,9 +381,10 @@
 </footer>
 
 <script src="static/js/three.min.js"></script>
-<script src="static/js/hero.js?v=27"></script>
-<script src="static/js/method.js?v=19"></script>
+<script src="static/js/hero.js?v=29"></script>
+<script src="static/js/method.js?v=20"></script>
+<script src="static/js/multimodal.js?v=1"></script>
 <script src="static/js/charts.js?v=1"></script>
-<script src="static/js/gallery.js?v=1"></script>
+<script src="static/js/gallery.js?v=2"></script>
 </body>
 </html>
