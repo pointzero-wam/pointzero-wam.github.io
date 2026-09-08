@@ -290,7 +290,7 @@
     if (sel) sel.disabled = true;
     host.classList.add('is-loading');
     var got = cache[key] ? Promise.resolve(cache[key])
-                         : fetch(BASE + key + '.bin').then(function (r) { return r.arrayBuffer(); })
+                         : fetch(BASE + key + '.bin?v=' + (manifest.build || 0)).then(function (r) { return r.arrayBuffer(); })
                              .then(function (b) { cache[key] = b; return b; });
     return got.then(function (buf) {
       dispose(CUR);
