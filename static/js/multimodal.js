@@ -290,11 +290,15 @@
                         m.spread_lo_mm + '–' + m.spread_hi_mm + ' mm';
         sel.appendChild(o);
       });
-      var lab = document.createElement('label');
-      lab.className = 'mm-pick';
-      lab.innerHTML = '<span>scene</span>';
-      lab.appendChild(sel);
-      bar.appendChild(lab);
+      // with a single scene the picker is noise, so only show it when there is
+      // genuinely something to switch between
+      if (keys.length > 1) {
+        var lab = document.createElement('label');
+        lab.className = 'mm-pick';
+        lab.innerHTML = '<span>scene</span>';
+        lab.appendChild(sel);
+        bar.appendChild(lab);
+      }
       sel.addEventListener('change', function () {
         show(manifest, sel.value, sel).catch(function (e) {
           // a failed swap must not leave the picker stuck disabled
