@@ -1,0 +1,111 @@
+/* ------------------------------------------------------------------
+   Extra styles for the interactive method figure (DiT panel).
+   Adds: the start/end trajectory legend, the scrubbable denoising
+   slider, and the clickable denoising-step chips.
+   Loaded after index.css; nothing here overrides unrelated rules.
+   ------------------------------------------------------------------ */
+
+/* ---- legend: start state / trajectory / end state ---------------- */
+.mf-dit-legend {
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.85rem; flex-wrap: wrap;
+  padding: 0.34rem 0.4rem 0.06rem;
+  font-size: 0.62rem; color: #6b7280; line-height: 1.2;
+}
+.mf-lg { display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+.mf-lg i { display: inline-block; flex: 0 0 auto; }
+.mf-lg-d { width: 8px; height: 8px; border-radius: 50%; }
+.mf-lg-start { background: #8f9fb4; }
+.mf-lg-end { background: #ff7a33; }
+.mf-lg-line {
+  width: 24px; height: 2px; border-radius: 1px;
+  background: linear-gradient(90deg, #8f9fb4, #ff7a33);
+}
+
+/* ---- scrubber ---------------------------------------------------- */
+.mf-dit-scrub-row {
+  display: flex; align-items: center; gap: 0.45rem;
+  width: 100%; max-width: 430px;
+}
+.mf-dit-play {
+  flex: 0 0 auto; width: 21px; height: 21px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid #d7dbe1; border-radius: 50%; background: #fff;
+  color: #e0662a; font-size: 0.5rem; line-height: 1; cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.mf-dit-play.is-paused { font-size: 0.6rem; padding-left: 1px; }
+.mf-dit-play:hover { border-color: #e0662a; }
+
+.mf-dit-scrub {
+  flex: 1 1 auto; min-width: 0; height: 4px; margin: 0;
+  -webkit-appearance: none; appearance: none;
+  border-radius: 3px; outline: none; cursor: pointer;
+  background: linear-gradient(90deg, #c3c9d2 0%, #edb894 72%, #e0662a 86%, #e0662a 100%);
+}
+.mf-dit-scrub::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: #e0662a; border: 2px solid #fff; cursor: grab;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+.mf-dit-scrub:active::-webkit-slider-thumb { cursor: grabbing; }
+.mf-dit-scrub::-moz-range-thumb {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: #e0662a; border: 2px solid #fff; cursor: grab;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+.mf-dit-scrub:focus-visible { box-shadow: 0 0 0 2px rgba(224, 102, 42, 0.35); }
+.mf-dit-read {
+  flex: 0 0 auto; min-width: 10.4em; text-align: right;
+  font-size: 0.58rem; color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- step chips: now clickable and genuinely synced --------------- */
+.mf-step-b { cursor: pointer; outline: none; }
+.mf-step-b:hover { border-color: #f0b48c; }
+.mf-step-b:focus-visible { border-color: #e0662a; box-shadow: 0 0 0 2px rgba(224, 102, 42, 0.28); }
+.mf-step-b.is-on .mf-step-lab { color: #e0662a; font-weight: 600; }
+.mf-step-b.is-done { opacity: 0.42; }
+
+/* One chip per REAL Euler step — there are nine of them, so the chips are
+   compact: a two-pair point/global stack and the bare step number. The row
+   never fakes a count, so it must fit whatever the data says. */
+.mf-steps-row-n { gap: 0.22rem; }
+.mf-steps-axis {
+  font-size: 0.55rem; color: #9aa0a6; align-self: flex-end;
+  padding-bottom: 3px; margin-right: 0.1rem; white-space: nowrap;
+}
+.mf-step-c { padding: 3px 4px; gap: 2px; border-radius: 6px; }
+.mf-step-c .mf-step-stack { height: 13px; gap: 1.5px; }
+.mf-step-c .mf-step-stack i { width: 3px; }
+.mf-step-c .mf-step-lab { font-size: 0.56rem; font-variant-numeric: tabular-nums; }
+.mf-steps-foot {
+  font-size: 0.56rem; color: #a4a9b1; text-align: center;
+  font-style: italic; margin-top: -0.15rem;
+}
+
+/* ---- "post-trained" qualifier on the downstream output cards ------ */
+/* A quiet outlined pill under the card title, present only on the two outputs
+   that require post-training. Its own line, so it never squeezes the title. */
+/* the outer span is a plain block so the pill follows whatever text-align the
+   page gives the caption (centred inside .has-text-centered, left elsewhere) */
+.mf-w figcaption .mf-tag { display: block; margin-top: 0.2rem; line-height: 1; }
+.mf-w figcaption .mf-tag i {
+  display: inline-block; font-style: normal;
+  font-size: 0.5rem; font-weight: 600; letter-spacing: 0.07em;
+  text-transform: uppercase; white-space: nowrap;
+  color: #c2601f; background: rgba(224, 102, 42, 0.07);
+  border: 1px solid rgba(224, 102, 42, 0.34); border-radius: 999px;
+  padding: 0.06rem 0.36rem; line-height: 1.5;
+}
+
+@media screen and (max-width: 860px) {
+  .mf-dit-read { display: none; }
+  .mf-dit-legend { gap: 0.5rem; font-size: 0.56rem; }
+  .mf-steps-axis { display: none; }
+  .mf-step-c { padding: 2px 3px; }
+  .mf-w figcaption .mf-tag i { font-size: 0.46rem; padding: 0.04rem 0.28rem; }
+}

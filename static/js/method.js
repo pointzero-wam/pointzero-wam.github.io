@@ -90,7 +90,20 @@
       return fetch(BASE + key + '.bin?v=' + (m.build || 0)).then(function (r) { return r.arrayBuffer(); })
         .then(function (buf) {
           var d = { man: man };
-          if (man.kind === 'ctx') {
+          if (man.kind === 'dn') {
+            // Real sampler intermediates: (n_steps + 1) states x T x n_trk x 3.
+            // State 0 is the t = 0 initialisation the sampler started from.
+            var dv = part(buf, man, 'dn_trk'), NT = man.n_trk, sz = NT * 3;
+            d.dn = [];
+            for (var si = 0; si <= man.n_steps; si++) {
+              var frames = [];
+              for (var ti = 0; ti < man.T; ti++) {
+                var o5 = (si * man.T + ti) * sz;
+                frames.push(dequant(dv.subarray(o5, o5 + sz), man.lo, man.hi, NT));
+              }
+              d.dn.push(frames);
+            }
+          } else if (man.kind === 'ctx') {
             var Kx = man.K, so = 3, nOx = Math.floor(man.n_obj / so);
             var obx = part(buf, man, 'obj_base'), ocx = part(buf, man, 'obj_col');
             var nix = part(buf, man, 'nn_idx'), nwx = part(buf, man, 'nn_w');
@@ -187,6 +200,68 @@
     return discTex;
   }
 
+  // -------------------------------------------------------- denoising clock
+  // One shared, scrubbable clock for the DiT panel. The 3D denoising widget,
+  // the step chips and the slider all read this single value, so they can never
+  // drift apart.
+  //
+  // There is nothing synthetic left here: the panel replays the nine real Euler
+  // steps the JiT sampler took on this scene (heater_box, seed 25 — the same run
+  // the rest of the page ships), captured out of the sampler by
+  // tools/dit_denoise_steps.py and exported by tools/export_denoise.py.
+  // The step count comes from the bin, not from this file.  `u` in [0,1] is
+  // a LINEAR axis over the states, so u * NSTEP is the true (fractional) step
+  // index and the slider is a true step axis.  Only the wall-clock pacing is a
+  // presentation choice: the loop sweeps the steps, then dwells on the resolved
+  // trajectory, and it opens on that dwell so a visitor arriving mid-page sees
+  // the answer first and the noise second.
+  var DIT = {
+    u: 1, ph: 0, drag: false, hold: 0, playing: true,
+    NSTEP: 9,             // real Euler steps; NSTEP + 1 captured states
+    // Pacing only — the CONTENT is the captured states and nothing else. The
+    // loop sweeps the steps (EASE < 1 plays the early, noisiest ones slightly
+    // faster), then dwells on the resolved trajectory. Step indices, chips and
+    // the readout are unaffected: they always report the real step.
+    SWEEP: 4.6, DWELL: 4.0, EASE: 0.72,   // seconds, seconds, exponent
+    D2F: null,            // mm from the final state after each state, from the manifest
+    subs: [],
+    frac: function () { return this.SWEEP / (this.SWEEP + this.DWELL); },
+    pos: function () { return this.u * this.NSTEP; },     // 0 .. NSTEP, fractional
+    // which step is being executed / has just finished
+    step: function () {
+      var p = this.pos();
+      return p <= 1e-6 ? 0 : Math.min(this.NSTEP, Math.ceil(p - 1e-6));
+    },
+    // linearly interpolated "how much noise is left", in mm
+    noiseMM: function () {
+      var d = this.D2F;
+      if (!d || !d.length) return null;
+      var p = Math.min(this.pos(), d.length - 1), i = Math.floor(p), f = p - i;
+      return d[i] + (d[Math.min(d.length - 1, i + 1)] - d[i]) * f;
+    },
+    emit: function () { for (var i = 0; i < this.subs.length; i++) { try { this.subs[i](this.u); } catch (e) {} } },
+    set: function (u) {
+      this.u = Math.max(0, Math.min(1, u));
+      this.ph = Math.pow(this.u, 1 / this.EASE) * this.frac();
+      this.emit();
+    },
+    // jump the scrubber to the state just after step k (k = 0 is the noise init)
+    goStep: function (k) { this.set(k / this.NSTEP); this.hold = 1.6; },
+    tick: function (dt) {
+      if (this.drag || !this.playing) return;
+      if (this.hold > 0) { this.hold -= dt; return; }
+      this.ph = (this.ph + dt / (this.SWEEP + this.DWELL)) % 1;
+      this.u = Math.pow(Math.min(1, this.ph / this.frac()), this.EASE);
+      this.emit();
+    }
+  };
+  if (!DIT._up) {
+    DIT._up = true;
+    window.addEventListener('pointerup', function () {
+      if (DIT.drag) { DIT.drag = false; DIT.hold = 1.1; }
+    });
+  }
+
   var widgets = [];
   var SR = null, SRC = null;
   function sharedRenderer() {
@@ -217,12 +292,26 @@
       return new THREE.Points(g, m);
     }
 
-    loadScene(key).then(function (d) {
+    // the denoising panel needs the scene's dense cloud AND the sampler states,
+    // which live in a small companion bin so nothing is duplicated
+    var loadP = (mode === 'denoise')
+      ? Promise.all([loadScene(key), loadScene(key + '_dn')]).then(function (a) {
+          a[0].dnd = a[1]; return a[0];
+        })
+      : loadScene(key);
+
+    loadP.then(function (d) {
       var man = d.man;
       var diag = Math.hypot(man.hi[0] - man.lo[0], man.hi[1] - man.lo[1], man.hi[2] - man.lo[2]);
       st.tgt.set(man.center[0], man.center[1], man.center[2]);
-      st.dist = diag * (mode === 'sim' ? 0.5 : (mode === 'cloud' || mode === 'track') ? 0.68 : mode === 'denoise' ? 0.66 : 0.47);
+      st.dist = diag * (mode === 'sim' ? 0.5 : (mode === 'cloud' || mode === 'track') ? 0.68 : mode === 'denoise' ? 0.76 : 0.47);
       st.el = mode === 'sim' ? 0.42 : 0.34;
+      if (mode === 'denoise' && d.dnd) {
+        // frame the whole noise burst, not just the resolved tracks
+        var dm = d.dnd.man;
+        st.tgt.set(dm.center[0], dm.center[1], dm.center[2]);
+        st.dist = Math.hypot(dm.hi[0] - dm.lo[0], dm.hi[1] - dm.lo[1], dm.hi[2] - dm.lo[2]) * 1.02;
+      }
 
       if (mode === 'sim' || mode === 'wam') {
         var gsim = gainOf(d.cols[0], d.n);
@@ -247,66 +336,116 @@
         var objCol = faint ? grayOf(d.objCol, d.nObj, gainOf(d.objCol, d.nObj))
                            : srgb(d.objCol, d.nObj, gainOf(d.objCol, d.nObj));
         if (mode === 'denoise') {
-          var clean = new Float32Array(d.nObj * 3), noisy = new Float32Array(d.nObj * 3);
-          var last = d.trk[man.T - 1], first = d.trk[0];
-          for (var i = 0; i < d.nObj; i++) {
-            var dx = 0, dy = 0, dz = 0;
-            for (var k = 0; k < d.K; k++) {
-              var w = d.nnW[i * d.K + k], ji = d.nnIdx[i * d.K + k] * 3;
-              dx += w * (last[ji] - first[ji]);
-              dy += w * (last[ji + 1] - first[ji + 1]);
-              dz += w * (last[ji + 2] - first[ji + 2]);
+          // What the DiT denoises is a TRAJECTORY per point, not one cloud, so
+          // we hold three things and drive all of them from the SAME captured
+          // sampler states:
+          //   * the cloud at t = 0            (the observation — given, fixed)
+          //   * the cloud at t = T-1          (end state)
+          //   * the polyline between them     (the trajectory itself)
+          // d.dnd.dn[k] is the model's real state after Euler step k (k = 0 is
+          // the initialisation it started from), each a T-long list of the 1000
+          // sampled tracks.  Every k gets its own dense end cloud and its own
+          // polyline bundle, precomputed here; the frame loop only interpolates
+          // between two of them, so scrubbing is exact and cheap.
+          var TN = man.T, KN = d.K, nObj = d.nObj;
+          var DN = d.dnd.dn, NSTEP = d.dnd.man.n_steps, NSTATE = NSTEP + 1;
+          var first = DN[0][0];          // t = 0 is identical in every state
+
+          // --- start cloud (decimated by 2 so start and end never fight) ----
+          var sd = 2, nD = Math.ceil(nObj / sd);
+          var cleanS = new Float32Array(nD * 3);
+          for (var i = 0, wI = 0; i < nObj; i += sd, wI++) {
+            cleanS[3 * wI] = d.obj[3 * i];
+            cleanS[3 * wI + 1] = d.obj[3 * i + 1];
+            cleanS[3 * wI + 2] = d.obj[3 * i + 2];
+          }
+
+          // --- which dense points carry a drawn polyline --------------------
+          // kept even so every polyline endpoint coincides with a rendered dot
+          var NLwant = 120;
+          var stepL = Math.max(2, Math.floor(nObj / NLwant / 2) * 2);
+          var lidx = [];
+          for (var q2 = 0; q2 < nObj; q2 += stepL) lidx.push(q2);
+          var NL = lidx.length;
+
+          // --- one end cloud + one polyline bundle per denoising state ------
+          var endS = [], lineS = [];
+          for (var s5 = 0; s5 < NSTATE; s5++) {
+            var frames = DN[s5], last = frames[TN - 1];
+            var eArr = new Float32Array(nD * 3);
+            for (var i2 = 0, w2i = 0; i2 < nObj; i2 += sd, w2i++) {
+              var dx = 0, dy = 0, dz = 0, oK = i2 * KN;
+              for (var k = 0; k < KN; k++) {
+                var w = d.nnW[oK + k], ji = d.nnIdx[oK + k] * 3;
+                dx += w * (last[ji] - first[ji]);
+                dy += w * (last[ji + 1] - first[ji + 1]);
+                dz += w * (last[ji + 2] - first[ji + 2]);
+              }
+              eArr[3 * w2i] = d.obj[3 * i2] + dx;
+              eArr[3 * w2i + 1] = d.obj[3 * i2 + 1] + dy;
+              eArr[3 * w2i + 2] = d.obj[3 * i2 + 2] + dz;
             }
-            clean[3 * i] = d.obj[3 * i] + dx;
-            clean[3 * i + 1] = d.obj[3 * i + 1] + dy;
-            clean[3 * i + 2] = d.obj[3 * i + 2] + dz;
-            var s = diag * 0.17;
-            noisy[3 * i] = clean[3 * i] + (Math.random() - 0.5) * s;
-            noisy[3 * i + 1] = clean[3 * i + 1] + (Math.random() - 0.5) * s;
-            noisy[3 * i + 2] = clean[3 * i + 2] + (Math.random() - 0.5) * s;
-          }
-          W.noisy = noisy; W.nObj = d.nObj; W.denoise = true;
-          W.obj = d.obj; W.nnIdx = d.nnIdx; W.nnW = d.nnW; W.K = d.K;
-          W.trk = d.trk; W.T = man.T;
-          // colour by how far each point actually moves: static geometry fades to a
-          // dim hint, moving points glow — after denoising you see the motion
-          var mag = new Float32Array(d.nObj), mmax = 1e-6;
-          for (var mi = 0; mi < d.nObj; mi++) {
-            var ddx = clean[3 * mi] - d.obj[3 * mi];
-            var ddy = clean[3 * mi + 1] - d.obj[3 * mi + 1];
-            var ddz = clean[3 * mi + 2] - d.obj[3 * mi + 2];
-            mag[mi] = Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
-            if (mag[mi] > mmax) mmax = mag[mi];
-          }
-          var mcol = new Float32Array(d.nObj * 3);
-          for (var mj = 0; mj < d.nObj; mj++) {
-            var t9 = Math.min(1, Math.pow(mag[mj] / mmax, 0.55));
-            mcol[3 * mj] = 0.035 + t9 * (0.98 - 0.035);
-            mcol[3 * mj + 1] = 0.038 + t9 * (0.45 - 0.038);
-            mcol[3 * mj + 2] = 0.046 + t9 * (0.13 - 0.046);
-          }
-          W.pts = points(noisy, mcol, diag * 0.0078, 1);
-          group.add(W.pts);
-          // trajectory trails for a subset of the tracked points, revealed over time
-          var NT = 260, TT = man.T, stride = Math.max(1, Math.floor(man.n_trk / NT));
-          var sel = [];
-          for (var q2 = 0; q2 < man.n_trk && sel.length < NT; q2 += stride) sel.push(q2);
-          var segs = new Float32Array(sel.length * (TT - 1) * 2 * 3);
-          var w2 = 0;
-          for (var tt = 0; tt < TT - 1; tt++) {
-            for (var si = 0; si < sel.length; si++) {
-              var id = sel[si] * 3;
-              segs[w2++] = d.trk[tt][id]; segs[w2++] = d.trk[tt][id + 1]; segs[w2++] = d.trk[tt][id + 2];
-              segs[w2++] = d.trk[tt + 1][id]; segs[w2++] = d.trk[tt + 1][id + 1]; segs[w2++] = d.trk[tt + 1][id + 2];
+            endS.push(eArr);
+            var lArr = new Float32Array(NL * TN * 3);
+            for (var li = 0; li < NL; li++) {
+              var pi = lidx[li], ob = pi * 3, oK2 = pi * KN;
+              for (var t = 0; t < TN; t++) {
+                var Tt = frames[t], ax = 0, ay = 0, az = 0;
+                for (var k2 = 0; k2 < KN; k2++) {
+                  var w2 = d.nnW[oK2 + k2], j2 = d.nnIdx[oK2 + k2] * 3;
+                  ax += w2 * (Tt[j2] - first[j2]);
+                  ay += w2 * (Tt[j2 + 1] - first[j2 + 1]);
+                  az += w2 * (Tt[j2 + 2] - first[j2 + 2]);
+                }
+                var b0 = (li * TN + t) * 3;
+                lArr[b0] = d.obj[ob] + ax;
+                lArr[b0 + 1] = d.obj[ob + 1] + ay;
+                lArr[b0 + 2] = d.obj[ob + 2] + az;
+              }
             }
+            lineS.push(lArr);
           }
+
+          // --- geometry: colour ramps t = 0 (slate) -> t = T-1 (orange) -----
+          var lcol = new Float32Array(NL * TN * 3);
+          var C0 = [0.52, 0.60, 0.70], C1 = [1.0, 0.46, 0.16];
+          for (var li2 = 0; li2 < NL; li2++)
+            for (var t2 = 0; t2 < TN; t2++) {
+              var bc = (li2 * TN + t2) * 3, ft = TN > 1 ? t2 / (TN - 1) : 1;
+              lcol[bc] = C0[0] + (C1[0] - C0[0]) * ft;
+              lcol[bc + 1] = C0[1] + (C1[1] - C0[1]) * ft;
+              lcol[bc + 2] = C0[2] + (C1[2] - C0[2]) * ft;
+            }
+          var lidxArr = new Uint16Array(NL * (TN - 1) * 2), lw = 0;
+          for (var la = 0; la < NL; la++)
+            for (var lb = 0; lb < TN - 1; lb++) {
+              lidxArr[lw++] = la * TN + lb; lidxArr[lw++] = la * TN + lb + 1;
+            }
           var lg = new THREE.BufferGeometry();
-          lg.setAttribute('position', new THREE.BufferAttribute(segs, 3));
-          lg.setDrawRange(0, 0);
-          W.trail = new THREE.LineSegments(lg,
-            new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.75 }));
-          W.trailPerStep = sel.length * 2;
-          group.add(W.trail);
+          lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(lineS[NSTEP]), 3));
+          lg.setAttribute('color', new THREE.BufferAttribute(lcol, 3));
+          lg.setIndex(new THREE.BufferAttribute(lidxArr, 1));
+          var lines = new THREE.LineSegments(lg,
+            new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.55 }));
+
+          // the start cloud is deliberately recessive: where nothing moves the two
+          // clouds coincide, and an equally bright grey would dither against the
+          // orange instead of reading as "ghost of t=0"
+          var sp = points(cleanS, null, diag * 0.0066, 0.55);
+          sp.material.color.setHex(0x7f8ea6);
+          var ep = points(endS[NSTEP], null, diag * 0.0082, 1);
+          ep.material.color.setHex(0xff7a33);
+          group.add(sp); group.add(ep); group.add(lines);
+
+          W.dn = {
+            nD: nD, NL: NL, T: TN, NSTEP: NSTEP,
+            endS: endS, lineS: lineS,
+            endPts: ep, lines: lines
+          };
+          DIT.NSTEP = NSTEP;
+          DIT.D2F = d.dnd.man.dist_to_final_mm || null;
+          if (DIT.chips) DIT.chips();
+          DIT.emit();
         } else {
           W.pts = points(d.obj, objCol, diag * 0.0078, faint ? 0.5 : 1);
           group.add(W.pts);
@@ -336,38 +475,22 @@
                        st.tgt.z + st.dist * ce * Math.cos(st.az));
       cam.lookAt(st.tgt);
       var u = (st.t % 4.4) / 4.4;
-      if (W.denoise && W.pts) {
-        // phase 1: noise resolves into the scene; phase 2: points travel along
-        // their predicted trajectories, trails drawing behind them
-        var DEN = 0.42;
-        var a = W.pts.geometry.getAttribute('position'), arr = a.array;
-        var tf = u <= DEN ? 0 : Math.min(1, (u - DEN) / (0.95 - DEN)) * (W.T - 1);
-        var j0 = Math.floor(tf), j1 = Math.min(W.T - 1, j0 + 1), aa = tf - j0;
-        var A0 = W.trk[j0], B0 = W.trk[j1], T00 = W.trk[0];
-        for (var i2 = 0; i2 < W.nObj; i2++) {
-          var dx2 = 0, dy2 = 0, dz2 = 0, o2 = i2 * W.K;
-          for (var k3 = 0; k3 < W.K; k3++) {
-            var w3 = W.nnW[o2 + k3], ji2 = W.nnIdx[o2 + k3] * 3;
-            dx2 += w3 * (A0[ji2] + (B0[ji2] - A0[ji2]) * aa - T00[ji2]);
-            dy2 += w3 * (A0[ji2 + 1] + (B0[ji2 + 1] - A0[ji2 + 1]) * aa - T00[ji2 + 1]);
-            dz2 += w3 * (A0[ji2 + 2] + (B0[ji2 + 2] - A0[ji2 + 2]) * aa - T00[ji2 + 2]);
-          }
-          var cx2 = W.obj[3 * i2] + dx2, cy2 = W.obj[3 * i2 + 1] + dy2, cz2 = W.obj[3 * i2 + 2] + dz2;
-          if (u <= DEN) {
-            var e = Math.min(1, u / DEN); e = e * e * (3 - 2 * e);
-            arr[3 * i2] = W.noisy[3 * i2] + (cx2 - W.noisy[3 * i2]) * e;
-            arr[3 * i2 + 1] = W.noisy[3 * i2 + 1] + (cy2 - W.noisy[3 * i2 + 1]) * e;
-            arr[3 * i2 + 2] = W.noisy[3 * i2 + 2] + (cz2 - W.noisy[3 * i2 + 2]) * e;
-          } else {
-            arr[3 * i2] = cx2; arr[3 * i2 + 1] = cy2; arr[3 * i2 + 2] = cz2;
-          }
-        }
-        a.needsUpdate = true;
-        if (W.trail) {
-          var steps = Math.max(0, Math.floor(tf));
-          W.trail.geometry.setDrawRange(0, steps * W.trailPerStep);
-          W.trail.material.opacity = u <= DEN ? 0 : 0.75;
-        }
+      if (W.dn) {
+        // driven by the shared, scrubbable denoising clock — the slider and the
+        // step chips read exactly the same value, so they cannot drift. All that
+        // happens here is a lerp between two REAL captured sampler states.
+        var D = W.dn, p = DIT.pos();
+        var s0 = Math.min(D.NSTEP, Math.floor(p)), s1 = Math.min(D.NSTEP, s0 + 1);
+        var fa = p - s0;
+        var lerp = function (obj3, A, B, n3) {
+          var at = obj3.geometry.getAttribute('position'), o = at.array;
+          for (var i2 = 0; i2 < n3; i2++) o[i2] = A[i2] + (B[i2] - A[i2]) * fa;
+          at.needsUpdate = true;
+        };
+        lerp(D.endPts, D.endS[s0], D.endS[s1], D.nD * 3);
+        lerp(D.lines, D.lineS[s0], D.lineS[s1], D.NL * D.T * 3);
+        // lines only assert themselves once they mean something
+        D.lines.material.opacity = 0.10 + 0.62 * Math.pow(p / D.NSTEP, 1.5);
       } else if (W.animate && W.pts) {
         var f = Math.min(1, u / 0.85) * (W.T - 1);
         var j0 = Math.floor(f), j1 = Math.min(W.T - 1, j0 + 1), aa = f - j0;
@@ -436,7 +559,7 @@
     perceiver: { title: 'Perceiver-IO',
       body: 'We use a perceiver-IO to reduce the total number of visual tokens to just 4 tokens.' },
     denoise: { title: 'Denoising transformer',
-      body: 'The trajectories start as pure noise and are denoised into clean motion. Layers alternate between point attention (between point tokens only), and global attention with all available tokens.'  },
+      body: 'What is denoised is a <b>trajectory per point</b>, not a single cloud: every observed point carries a full 3D path, shown by its start state (t&nbsp;=&nbsp;0, grey — the observation, which is given), its end state (t&nbsp;=&nbsp;T−1, orange) and the path between them. This panel plays the sampler\'s <b>real intermediate states</b> for this scene, captured from the 9 Euler steps it actually ran: the readout is the true step index and the true mean distance left to the final sample. Drag the slider or click a step to scrub. Layers alternate between point attention (between point tokens only) and global attention with all available tokens.'  },
     pred: { title: 'Dense 3D point tracks',
       body: 'The pre-training output: a future trajectory for every observed point.' },
     wam: { title: 'Action-conditioned dynamics',
@@ -446,8 +569,14 @@
   };
 
   function buildSchematic() {
-    hintEl.textContent = 'live 3D — hover any panel';
+    hintEl.textContent = 'live 3D — hover any panel, drag the denoising slider';
     widgets.length = 0;
+    DIT.subs.length = 0;
+    DIT.u = 1; DIT.ph = DIT.frac();      // open on the resolved trajectory
+    DIT.drag = false; DIT.hold = 0; DIT.playing = true;
+    // the shared denoising clock ticks first, so everything downstream in this
+    // frame (3D widget, chips, slider knob) reads one consistent value
+    widgets.push({ tick: function (dt) { DIT.tick(dt); } });
     var host = document.createElement('div');
     host.className = 'mf-flow';
 
@@ -455,59 +584,149 @@
       f.addEventListener('mouseenter', function () { info(CARDS[k].title, CARDS[k].body); });
       f.addEventListener('click', function () { info(CARDS[k].title, CARDS[k].body); });
     }
-    function w3d(key, mode, label, k, tall) {
+    // A quiet qualifier on the cards whose output needs post-training, so a
+    // reader can tell those apart from the pre-training output at a glance.
+    function cap(label, post) {
+      // the tag sits on its own line under the title: the output cards are
+      // narrow, and putting it beside the title forces the title to wrap
+      return '<figcaption>' + label +
+        (post ? '<span class="mf-tag"><i>post-trained</i></span>' : '') + '</figcaption>';
+    }
+    function w3d(key, mode, label, k, tall, post) {
       var f = document.createElement('figure');
       f.className = 'mf-w' + (tall ? ' mf-w-tall' : '');
       if (tall) {
         f.innerHTML = '<canvas class="mf-w-canvas mf-dit-canvas"></canvas>' +
+          '<div class="mf-dit-legend">' +
+          '  <span class="mf-lg"><i class="mf-lg-d mf-lg-start"></i>start state · t = 0</span>' +
+          '  <span class="mf-lg"><i class="mf-lg-line"></i>trajectory per point</span>' +
+          '  <span class="mf-lg"><i class="mf-lg-d mf-lg-end"></i>end state · t = T−1</span>' +
+          '</div>' +
           '<div class="mf-dit-steps"></div>' +
           '<figcaption>' + label + '</figcaption>';
         buildLayers(f.querySelector('.mf-dit-steps'));
       } else {
-        f.innerHTML = '<canvas class="mf-w-canvas"></canvas><figcaption>' + label + '</figcaption>';
+        f.innerHTML = '<canvas class="mf-w-canvas"></canvas>' + cap(label, post);
       }
       attach(f, k);
       setTimeout(function () { mini(f.querySelector('canvas'), key, mode); }, 0);
       return f;
     }
 
-    // decoder layers, alternating the two attention types, highlighted in
-    // sequence so the block reads as depth rather than one box
+    // Denoising steps, driven by the SAME clock as the 3D animation above.
+    // The slider scrubs that clock, so dragging it moves the widget; the chips
+    // light up in lockstep and can themselves be clicked to jump to a step.
     function buildLayers(host) {
-      var K = 4, steps = [];
+      // One chip per REAL Euler step. The sampler takes 9 of them, so there are
+      // 9 chips — no schematic ellipsis, no invented step count. Chip j is the
+      // state after step j+1; the slider's zero is the t = 0 initialisation the
+      // sampler started from, which no chip claims.
+      var steps = [];
+
       var head = document.createElement('span');
       head.className = 'mf-steps-head';
-      head.textContent = 'each denoising step runs the whole stack — many alternating point / global attention layers';
       host.appendChild(head);
+
+      var bar = document.createElement('div');
+      bar.className = 'mf-dit-scrub-row';
+      bar.innerHTML =
+        '<button type="button" class="mf-dit-play" title="pause / play">&#10074;&#10074;</button>' +
+        '<input class="mf-dit-scrub" type="range" min="0" max="1000" step="1" value="0" ' +
+        'aria-label="scrub the denoising steps">' +
+        '<span class="mf-dit-read"></span>';
+      host.appendChild(bar);
+      var slider = bar.querySelector('.mf-dit-scrub');
+      var play = bar.querySelector('.mf-dit-play');
+      var read = bar.querySelector('.mf-dit-read');
+
       var row = document.createElement('div');
-      row.className = 'mf-steps-row';
+      row.className = 'mf-steps-row mf-steps-row-n';
       host.appendChild(row);
-      for (var i = 0; i < K; i++) {
-        var b = document.createElement('div');
-        b.className = 'mf-step-b';
-        var bars = '';
-        for (var L2 = 0; L2 < 6; L2++)
-          bars += '<i class="' + (L2 % 2 === 0 ? 'is-p' : 'is-g') + '"></i>';
-        b.innerHTML = '<span class="mf-step-stack">' + bars + '</span>' +
-                      '<span class="mf-step-sub">point / global × L</span>' +
-                      '<span class="mf-step-lab">denoising step ' + (i + 1) + '</span>';
-        row.appendChild(b);
-        steps.push(b);
+
+      // Built from DIT.NSTEP, and rebuilt if the loaded bin reports a different
+      // count — the chip row can never advertise a step count the data does not
+      // actually contain.
+      function renderChips() {
+        if (steps.length === DIT.NSTEP) return;
+        steps.length = 0;
+        row.innerHTML = '<span class="mf-steps-axis">step</span>';
+        head.innerHTML = 'the sampler takes <b>' + DIT.NSTEP + ' Euler steps</b>, and every ' +
+          'one of them runs the whole stack — many alternating point / global attention layers';
+        for (var i = 0; i < DIT.NSTEP; i++) {
+          var b = document.createElement('div');
+          b.className = 'mf-step-b mf-step-c';
+          b.setAttribute('role', 'button');
+          b.setAttribute('tabindex', '0');
+          b.setAttribute('title', 'jump to the state after denoising step ' + (i + 1));
+          var bars = '';
+          for (var L2 = 0; L2 < 4; L2++)
+            bars += '<i class="' + (L2 % 2 === 0 ? 'is-p' : 'is-g') + '"></i>';
+          b.innerHTML = '<span class="mf-step-stack">' + bars + '</span>' +
+                        '<span class="mf-step-lab">' + (i + 1) + '</span>';
+          row.appendChild(b);
+          steps.push(b);
+          (function (j, el) {
+            function jump(ev) { ev.stopPropagation(); DIT.goStep(j + 1); }
+            el.addEventListener('click', jump);
+            el.addEventListener('keydown', function (ev) {
+              if (ev.key === 'Enter' || ev.key === ' ') jump(ev);
+            });
+          })(i, b);
+        }
+        lastIdx = -1;
       }
-      var xl = document.createElement('span');
-      xl.className = 'mf-chip-xl'; xl.textContent = '⋯';
-      row.appendChild(xl);
-      var lastRow = -1;
-      widgets.push({ tick: function () {
-        var u = (performance.now() / 1000 % 4.4) / 4.4;
-        var idx = Math.min(steps.length - 1, Math.floor(u / 0.42 * steps.length));
-        if (idx === lastRow) return;
-        lastRow = idx;
-        steps.forEach(function (b2, j) {
-          b2.classList.toggle('is-on', j === idx);
-          b2.classList.toggle('is-done', j < idx);
-        });
-      } });
+      DIT.chips = renderChips;
+      renderChips();
+
+      var foot = document.createElement('span');
+      foot.className = 'mf-steps-foot';
+      foot.textContent = 'real sampler states, captured from this scene’s run';
+      host.appendChild(foot);
+
+      // ---- slider drives the clock ----------------------------------------
+      function grab(ev) { ev.stopPropagation(); DIT.drag = true; }
+      slider.addEventListener('pointerdown', grab);
+      slider.addEventListener('mousedown', grab);
+      slider.addEventListener('touchstart', grab, { passive: true });
+      slider.addEventListener('click', function (ev) { ev.stopPropagation(); });
+      slider.addEventListener('input', function () {
+        DIT.drag = true;
+        DIT.set(slider.value / 1000);
+      });
+      slider.addEventListener('change', function () { DIT.drag = false; DIT.hold = 1.1; });
+      play.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        DIT.playing = !DIT.playing;
+        DIT.hold = 0;
+        play.innerHTML = DIT.playing ? '&#10074;&#10074;' : '&#9654;';
+        play.classList.toggle('is-paused', !DIT.playing);
+      });
+
+      // ---- clock drives the chips, the readout and the slider knob --------
+      // The readout carries the TRUE step index and the actual amount of noise
+      // still in the sample: the mean distance, over all points and all future
+      // timesteps, between this state and the sampler's final one.
+      var lastIdx = -1, lastRead = '', lastVal = -1;
+      DIT.subs.push(function (u) {
+        var cur = DIT.step();
+        if (cur !== lastIdx) {
+          lastIdx = cur;
+          for (var j = 0; j < steps.length; j++) {
+            steps[j].classList.toggle('is-on', j + 1 === cur);
+            steps[j].classList.toggle('is-done', j + 1 < cur);
+          }
+        }
+        var mm = DIT.noiseMM();
+        var txt = (cur === 0 ? 'noise · t = 0' : 'step ' + cur + ' / ' + DIT.NSTEP);
+        if (mm !== null) {
+          txt += ' · ' + (mm < 0.05 ? '0' : (mm < 10 ? mm.toFixed(1) : Math.round(mm)));
+          txt += ' mm from final';
+        }
+        if (txt !== lastRead) { lastRead = txt; read.textContent = txt; }
+        var v = Math.round(u * 1000);
+        if (v !== lastVal) { lastVal = v; if (!DIT.drag) slider.value = v; }
+      });
+      DIT.emit();
     }
 
     var ci = document.createElement('div'); ci.className = 'mf-fcol';
@@ -537,17 +756,17 @@
 
     var cd = document.createElement('div'); cd.className = 'mf-fcol mf-fcol-dit';
     cd.innerHTML = '<span class="mf-col-label">Diffusion Transformer (DiT)</span>';
-    cd.appendChild(w3d(SCENE, 'denoise', 'noise &rarr; tracks', 'denoise', true));
+    cd.appendChild(w3d(SCENE, 'denoise', 'noise &rarr; a 3D trajectory per point', 'denoise', true));
 
     var co = document.createElement('div'); co.className = 'mf-fcol';
     co.innerHTML = '<span class="mf-col-label">outputs</span>';
     co.appendChild(w3d(SCENE, 'pred', 'Dense 3D point tracks', 'pred'));
-    co.appendChild(w3d(WAM, 'wam', 'Action-conditioned dynamics', 'wam'));
+    co.appendChild(w3d(WAM, 'wam', 'Action-conditioned dynamics', 'wam', false, true));
     var vcard = document.createElement('figure'); vcard.className = 'mf-w';
     vcard.innerHTML = '<video class="mf-w-vid" autoplay muted loop playsinline preload="metadata" ' +
       'poster="static/method/rollout_blockstack.jpg">' +
       '<source src="static/method/rollout_blockstack.mp4" type="video/mp4"></video>' +
-      '<figcaption>Robot manipulation</figcaption>';
+      cap('Robot manipulation', true);
     attach(vcard, 'sim');
     co.appendChild(vcard);
 

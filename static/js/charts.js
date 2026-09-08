@@ -1,9 +1,14 @@
 /* Interactive result charts. Replaces each results table with a grouped bar
    chart (the table stays, one click away, as the table view).
-   Palette: dataviz reference categorical slots, order validated for adjacent
-   pairs on a light surface (CVD dE 9.1 / normal dE 22.9, both above floor).
-   Aqua + yellow sit under 3:1 contrast, so the relief rule applies -> the
-   table view and per-bar tooltips are always available. */
+   Colour is NOT decided here: every series carries the colour assigned by the
+   one global method->colour map in tools/build_charts_json.py, which guarantees
+   a method wears the same hue in all three charts and no hue is ever reused for
+   a second method. Baselines take the validated categorical slots; the orange
+   family (#f69674 / #eb6834 / #ad4214) is reserved for PointZero variants.
+   Worst same-chart adjacent separation is CVD dE 9.2 / normal dE 16.3, both
+   above floor. Aqua, yellow, magenta and the light orange sit under 3:1
+   contrast, so the relief rule applies -> the legend, the per-bar tooltip and
+   the table view are always available. */
 (function () {
   'use strict';
 
@@ -18,6 +23,14 @@
     return Math.ceil(v / p * 2) / 2 * p;
   }
   function fmt(v) { return v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2).replace(/0$/, ''); }
+
+  /* Hairline ring on the legend swatches. The palette's light steps (yellow,
+     magenta, light orange) are under 3:1 against the page, and a 10px chip of
+     them nearly vanishes without an edge. Injected rather than added to
+     index.css so this file stays self-contained (no new <link> in index.html). */
+  var css = document.createElement('style');
+  css.textContent = '.ch-leg i{box-shadow:inset 0 0 0 1px rgba(11,11,11,0.14)}';
+  document.head.appendChild(css);
 
   var tip = document.createElement('div');
   tip.className = 'ch-tip'; tip.style.display = 'none';
@@ -34,7 +47,19 @@
         if (v !== null && v !== undefined) vals.push(v);
       });
     });
-    var max = nice(Math.max.apply(null, vals) * 1.02);
+    /* A bounded scale (a percentage) stops at its own ceiling: without this,
+       nice() rounds a 100.0 max up to 150 and the top third of the plot is dead
+       space, which makes a perfect score read as middling. Error metrics are
+       open-ended and declare no axis_max, so they keep the auto-scale. The
+       dmax guard means a value above the declared ceiling falls back to
+       auto-scaling rather than being clipped. */
+    var dmax = Math.max.apply(null, vals);
+    var max = (chart.axis_max && dmax <= chart.axis_max) ? chart.axis_max : nice(dmax * 1.02);
+
+    // Whole-number ticks print without a pointless ".0" (0/25/50/75/100).
+    var whole = [0, 1, 2, 3, 4].every(function (t) {
+      return Math.abs(max * t / 4 - Math.round(max * t / 4)) < 1e-9;
+    });
 
     // recessive grid + axis
     for (var t = 0; t <= 4; t++) {
@@ -42,7 +67,7 @@
       svg.appendChild(el('line', { x1: mL, y1: y, x2: mL + iw, y2: y,
         stroke: '#e8eaee', 'stroke-width': 1 }));
       var lab = el('text', { x: mL - 8, y: y + 3.5, 'text-anchor': 'end', class: 'ch-axis' });
-      lab.textContent = fmt(max * t / 4);
+      lab.textContent = whole ? String(Math.round(max * t / 4)) : fmt(max * t / 4);
       svg.appendChild(lab);
     }
 

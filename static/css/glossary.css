@@ -1,0 +1,157 @@
+/* Glossary affordances: baseline-method links + hover/click "?" definitions
+   for methods and error metrics. Injected at runtime by static/js/glossary.js. */
+
+.gl-name {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.18em;
+  white-space: nowrap;
+}
+
+.gl-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted #c3c7cd;
+}
+.gl-link:hover,
+.gl-link:focus-visible {
+  color: #e0662a;
+  border-bottom-color: #e0662a;
+}
+
+/* the "?" chip ------------------------------------------------------------ */
+.gl-q {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05em;
+  height: 1.05em;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 auto;
+  transform: translateY(-0.12em);
+  border: 1px solid #d5d8dd;
+  border-radius: 999px;
+  background: #fff;
+  color: #8a8f98;
+  font-family: 'Google Sans', 'Noto Sans', sans-serif;
+  font-size: 0.78em;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.gl-q:hover,
+.gl-q[aria-expanded="true"] {
+  color: #fff;
+  background: #e0662a;
+  border-color: #e0662a;
+}
+.gl-q:focus-visible {
+  outline: 2px solid #e0662a;
+  outline-offset: 2px;
+}
+
+.results-table .gl-q { transform: translateY(-0.1em); }
+.ch-metrics .gl-q-pill { margin: 0 0.15rem 0 -0.05rem; align-self: center; transform: none; }
+.gl-tag {
+  font-size: 0.8rem;
+  color: #4b5563;
+  font-family: 'Google Sans', 'Noto Sans', sans-serif;
+}
+
+/* tooltip / popover ------------------------------------------------------- */
+.gl-tip {
+  position: fixed;
+  z-index: 90;
+  max-width: 380px;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem 0.7rem;
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(20, 22, 28, 0.16);
+  font-family: 'Noto Sans', sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #3f4652;
+  text-align: left;
+  white-space: normal;
+}
+.gl-tip[hidden] { display: none; }
+
+.gl-tip .gl-h {
+  display: block;
+  font-family: 'Google Sans', 'Noto Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e0662a;
+  margin-bottom: 0.2rem;
+}
+.gl-tip .gl-b { display: block; }
+.gl-tip .gl-note {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: #8a8f98;
+}
+.gl-tip .gl-more {
+  display: inline-block;
+  margin-top: 0.45rem;
+  font-size: 0.75rem;
+  color: #e0662a;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(224, 102, 42, 0.35);
+}
+.gl-tip .gl-more:hover { border-bottom-color: #e0662a; }
+
+/* equations --------------------------------------------------------------- */
+.gl-tip .gl-eq {
+  display: block;
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  background: #faf7f5;
+  border: 1px solid #f0e3da;
+  border-radius: 8px;
+  font-family: 'Noto Sans', sans-serif;
+  font-size: 0.82rem;
+  white-space: normal;
+  line-height: 1.9;
+  color: #2f353f;
+}
+.gl-tip .gl-term {
+  display: inline-block;
+  white-space: nowrap;
+}
+.gl-tip .gl-lhs { margin-right: 0.15em; }
+.gl-tip .gl-eq sub,
+.gl-tip .gl-eq sup { font-size: 0.68em; }
+
+.gl-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 0.22em;
+  font-size: 0.9em;
+  line-height: 1.15;
+}
+.gl-frac .gl-num { border-bottom: 1px solid currentColor; padding: 0 0.2em; }
+.gl-frac .gl-den { padding: 0 0.2em; }
+
+.gl-op {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 0.18em;
+  line-height: 1;
+}
+.gl-op .gl-lim { font-size: 0.6em; color: #5b6472; min-height: 0.75em; }
+.gl-op .gl-big { font-size: 1.35em; line-height: 1; }
+.gl-op .gl-mid { font-size: 0.95em; line-height: 1.1; }
+
+@media (max-width: 640px) {
+  .gl-tip { max-width: calc(100vw - 24px); font-size: 0.78rem; }
+}

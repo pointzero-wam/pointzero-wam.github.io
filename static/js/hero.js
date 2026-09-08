@@ -54,7 +54,7 @@
     '  <div class="pz-loading"><div class="pz-spin"></div></div>' +
     '  <div class="pz-hint">drag to rotate &middot; scroll to zoom</div>' +
     '  <div class="pz-phase"><span class="pz-phase-main"></span><span class="pz-phase-sub"></span></div>' +
-    '  <div class="pz-rgb-wrap"><img class="pz-rgb" alt="input RGB"><span class="pz-rgb-label">input view</span></div>' +
+    '  <div class="pz-rgb-wrap"><img class="pz-rgb" alt="input RGB-D"><span class="pz-rgb-label">input RGB-D</span></div>' +
     '  <div class="pz-bar">' +
     '    <button class="pz-play" aria-label="Play/pause"></button>' +
     '    <input class="pz-scrub" type="range" min="0" max="1000" value="0">' +
@@ -101,12 +101,21 @@
   var playing = true, playhead = 0, lastTs = null, idleT = 0, visible = true;
 
   var orb = { az: 0.3, el: 0.5, dist: 1.2, target: new THREE.Vector3() };
+  // The camera's fov is VERTICAL, so a canvas narrower than the 16/9 the framing
+  // was chosen for loses horizontal field and crops the scene. The ctx viewers
+  // inset their canvas for the RGB-D gutter, so pull back to keep the same
+  // horizontal extent. Never push in on wider canvases - that would over-zoom.
+  var REF_ASPECT = 16 / 9;
+  function distFor() {
+    var a = camera.aspect || REF_ASPECT;
+    return orb.dist * (a < REF_ASPECT ? REF_ASPECT / a : 1);
+  }
   function applyCamera() {
-    var ce = Math.cos(orb.el), se = Math.sin(orb.el);
+    var ce = Math.cos(orb.el), se = Math.sin(orb.el), d = distFor();
     camera.position.set(
-      orb.target.x + orb.dist * ce * Math.sin(orb.az),
-      orb.target.y + orb.dist * se,
-      orb.target.z + orb.dist * ce * Math.cos(orb.az));
+      orb.target.x + d * ce * Math.sin(orb.az),
+      orb.target.y + d * se,
+      orb.target.z + d * ce * Math.cos(orb.az));
     camera.lookAt(orb.target);
   }
 
@@ -145,7 +154,9 @@
   }, { passive: false });
 
   function resize() {
-    var w = stage.clientWidth, h = stage.clientHeight;
+    // size off the CANVAS, not the stage: the ctx viewers inset the canvas to
+    // leave a gutter for the input-RGB-D thumbnail (see hero_extra.css)
+    var w = canvas.clientWidth || stage.clientWidth, h = canvas.clientHeight || stage.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
@@ -291,6 +302,37 @@
     return new THREE.CanvasTexture(c);
   })();
 
+  // soft splat: opaque core out to 32% of the radius, then a linear fade.
+  // Used for the ctx background, whose 30k points form a single thin depth
+  // sheet — hard-edged discs there read as a field of separate blobs, while
+  // the (volumetric, ~3x denser in projection) object cloud reads as a solid
+  // surface at the same nominal size. Feathered edges close that gap.
+  var softTex = (function () {
+    var c = document.createElement('canvas');
+    c.width = c.height = 64;
+    var x = c.getContext('2d');
+    var g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.62, 'rgba(255,255,255,1)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g;
+    x.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+
+  function makeSoftPoints(pos, colAttr, size, opacity) {
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos.slice(0), 3));
+    if (colAttr) g.setAttribute('color', new THREE.BufferAttribute(colAttr, 3));
+    var m = new THREE.PointsMaterial({
+      size: size, vertexColors: !!colAttr, sizeAttenuation: true,
+      map: softTex, alphaTest: 0.05, transparent: true, opacity: opacity,
+      depthWrite: false
+    });
+    if (!colAttr) m.color.setHex(0x9aa0a6);
+    return new THREE.Points(g, m);
+  }
+
   function makePoints(pos, colAttr, size, opacity) {
     var g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos.slice(0), 3));
@@ -386,7 +428,15 @@
       variantSel.style.display = 'none';
       updateRealLegend();
     } else if (man.kind === 'ctx') {
-      var bgP = makePoints(d.bgFrames[0], colorsToAttr(d.bgColFrames[0], man.n_bg, d.gain), diag * 0.0180, 0.9);
+      // 0.0320 (was 0.0180) + a tight-feathered splat (opaque to 62% of the
+      // radius): dense enough to close the depth-sheet holes, sharp enough that
+      // the surface texture under the object still reads. The bg sheet's median 3D nn spacing
+      // is only ~diag*0.0025-0.0032, but that number is dominated by depth
+      // noise along the ray; the *projected* spacing is far larger, so hard
+      // discs at 0.0180 covered <60% of the surface and read as a field of
+      // separate blobs next to the (volumetric, effectively ~3x denser in
+      // projection) object cloud. Feathered edges + this radius close the gap.
+      var bgP = makeSoftPoints(d.bgFrames[0], colorsToAttr(d.bgColFrames[0], man.n_bg, d.gain), diag * 0.0320, 0.9);
       group.add(bgP);
       anim.bgPoints = bgP; anim.bgFrames = d.bgFrames; anim.bgColFrames = d.bgColFrames;
       anim.nBg = man.n_bg; anim.bgShown = -1; anim.gain = d.gain;

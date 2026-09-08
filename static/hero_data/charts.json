@@ -9,13 +9,12 @@
   ],
   "metrics": [
    "MDE",
-   "MSE",
    "CD",
    "EMD"
   ],
   "unit": "error (lower is better)",
   "facet": true,
-  "note": "All baselines trained on our dataset with identical inputs. MDE, CD and EMD are in centimetres; MSE is in 10⁻² m². Each panel has its own scale — rigid-object errors are an order of magnitude larger, so cross-panel bar lengths are not comparable.",
+  "note": "We train all baselines on our dataset with identical inputs. Errors are in centimetres. Each panel has its own scale — rigid-object errors are an order of magnitude larger, so cross-panel bar lengths are not comparable.",
   "series": [
    {
     "name": "GBND",
@@ -23,19 +22,16 @@
     "data": {
      "Deformable": {
       "MDE": 17.4,
-      "MSE": 6.3,
       "CD": 14.9,
       "EMD": 19.1
      },
      "Articulated": {
       "MDE": 11.1,
-      "MSE": 6.6,
       "CD": 14.8,
       "EMD": 11.2
      },
      "Rigid": {
       "MDE": 155.7,
-      "MSE": 759.9,
       "CD": 186.6,
       "EMD": 140.7
      }
@@ -43,23 +39,20 @@
    },
    {
     "name": "ParticleFormer",
-    "color": "#1baf7a",
+    "color": "#008300",
     "data": {
      "Deformable": {
       "MDE": 17.3,
-      "MSE": 6.3,
       "CD": 14.8,
       "EMD": 19.1
      },
      "Articulated": {
       "MDE": 10.9,
-      "MSE": 6.6,
       "CD": 14.2,
       "EMD": 10.9
      },
      "Rigid": {
       "MDE": 155.0,
-      "MSE": 760.5,
       "CD": 185.5,
       "EMD": 140.6
      }
@@ -67,23 +60,20 @@
    },
    {
     "name": "PGND",
-    "color": "#eda100",
+    "color": "#4a3aa7",
     "data": {
      "Deformable": {
       "MDE": 9.0,
-      "MSE": 1.5,
       "CD": 4.1,
       "EMD": 8.1
      },
      "Articulated": {
       "MDE": 8.7,
-      "MSE": 2.1,
       "CD": 5.4,
       "EMD": 8.2
      },
      "Rigid": {
       "MDE": 67.6,
-      "MSE": 123.9,
       "CD": 33.6,
       "EMD": 53.1
      }
@@ -91,23 +81,20 @@
    },
    {
     "name": "PTv3",
-    "color": "#4a3aa7",
+    "color": "#1baf7a",
     "data": {
      "Deformable": {
       "MDE": 9.2,
-      "MSE": 1.5,
       "CD": 3.9,
       "EMD": 9.2
      },
      "Articulated": {
       "MDE": 8.3,
-      "MSE": 2.4,
       "CD": 5.3,
       "EMD": 8.2
      },
      "Rigid": {
       "MDE": 62.3,
-      "MSE": 115.5,
       "CD": 30.0,
       "EMD": 51.6
      }
@@ -119,19 +106,16 @@
     "data": {
      "Deformable": {
       "MDE": 4.2,
-      "MSE": 0.3,
       "CD": 1.8,
       "EMD": 3.6
      },
      "Articulated": {
       "MDE": 3.0,
-      "MSE": 0.6,
       "CD": 1.9,
       "EMD": 2.8
      },
      "Rigid": {
       "MDE": 32.4,
-      "MSE": 44.4,
       "CD": 15.4,
       "EMD": 29.0
      }
@@ -197,7 +181,7 @@
    },
    {
     "name": "PGND",
-    "color": "#eda100",
+    "color": "#4a3aa7",
     "data": {
      "Bread": {
       "MDE": 2.0,
@@ -233,7 +217,7 @@
    },
    {
     "name": "PointZero-Scratch",
-    "color": "#4a3aa7",
+    "color": "#f69674",
     "data": {
      "Bread": {
       "MDE": 4.2,
@@ -269,7 +253,7 @@
    },
    {
     "name": "PointZero-FT",
-    "color": "#eb6834",
+    "color": "#ad4214",
     "data": {
      "Bread": {
       "MDE": 1.5,
@@ -322,11 +306,11 @@
   ],
   "unit": "success rate % (higher is better)",
   "facet": false,
-  "note": "20 demonstrations per task. DP is omitted — it was not run on the real-world tasks.",
+  "note": "20 demonstrations per task. We omit DP: it has no real-world results.",
   "series": [
    {
     "name": "DP3",
-    "color": "#1baf7a",
+    "color": "#e34948",
     "data": {
      "Blockstack (sim)": {
       "SR": 44.4
@@ -353,7 +337,7 @@
    },
    {
     "name": "ATM",
-    "color": "#4a3aa7",
+    "color": "#eda100",
     "data": {
      "Blockstack (sim)": {
       "SR": 40.0
@@ -380,7 +364,7 @@
    },
    {
     "name": "3PoinTr",
-    "color": "#2a78d6",
+    "color": "#e87ba4",
     "data": {
      "Blockstack (sim)": {
       "SR": 90.9
@@ -407,7 +391,7 @@
    },
    {
     "name": "PointZero-FT",
-    "color": "#eb6834",
+    "color": "#ad4214",
     "data": {
      "Blockstack (sim)": {
       "SR": 99.8
@@ -432,6 +416,7 @@
      }
     }
    }
-  ]
+  ],
+  "axis_max": 100
  }
 ]

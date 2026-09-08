@@ -1,0 +1,55 @@
+/* Scene picker for the multi-sample figure. Kept out of index.css so the widget
+   can carry its own chrome; the panel grid itself still styles from .mm-* there. */
+.mm-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+.mm-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.mm-pick > span {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: #8a8f98;
+}
+.mm-select {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 0.85rem;
+  color: #333;
+  background-color: #fff;
+  /* chevron, inlined so the widget needs no extra asset */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M1 1.6 6 6.6l5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  background-size: 10px 7px;
+  border: 1px solid #d7dbe3;
+  border-radius: 999px;
+  padding: 0.32rem 2rem 0.32rem 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.mm-select:hover { border-color: #b9c0cc; }
+.mm-select:focus-visible {
+  outline: none;
+  border-color: #e0662a;
+  box-shadow: 0 0 0 3px rgba(224, 102, 42, 0.18);
+}
+.mm-select:disabled { opacity: 0.55; cursor: progress; }
+
+/* swapping scenes re-uploads ~1.7 MB of points; fade rather than pop */
+#multimodal-figure .mm-grid { transition: opacity 0.18s ease; }
+#multimodal-figure.is-loading .mm-grid { opacity: 0.35; }
+
+@media screen and (max-width: 700px) {
+  .mm-bar { flex-wrap: wrap; }
+}

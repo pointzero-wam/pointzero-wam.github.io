@@ -1,0 +1,50 @@
+/* hero_extra.css — additions to the PointZero 3D viewers (index.css untouched).
+   Loaded after static/css/index.css. */
+
+/* ------------------------------------------------------------------ *
+ * Post-training ("ctx") viewers: park the input RGB-D thumbnail in a
+ * dedicated left gutter instead of floating it over the point cloud.
+ * The canvas is inset by the gutter width, so the 3D scene is never
+ * occluded; hero.js sizes the renderer off the canvas, not the stage.
+ * ------------------------------------------------------------------ */
+
+/* give the 3D area back the width the gutter takes */
+.pz-section-viewer { max-width: 1000px; }
+
+@media screen and (min-width: 780px) {
+  [data-pz-viewer="ctx"] .pz-canvas {
+    left: 208px;
+    width: calc(100% - 208px) !important;
+  }
+
+  [data-pz-viewer="ctx"] .pz-rgb-wrap {
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    width: 180px;
+    gap: 0.3rem;
+  }
+  [data-pz-viewer="ctx"] .pz-rgb { width: 180px; }
+  [data-pz-viewer="ctx"] .pz-rgb-label { font-size: 0.66rem; }
+
+  /* a hairline so the gutter reads as a panel, not as dead space */
+  [data-pz-viewer="ctx"] .pz-stage::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 207px;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.09);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* re-centre the phase badge over the canvas, not over the whole stage */
+  [data-pz-viewer="ctx"] .pz-phase {
+    left: 208px;
+    right: 0;
+    transform: none;
+  }
+
+  /* keep the scrubber clear of the gutter */
+  [data-pz-viewer="ctx"] .pz-bar { padding-left: 214px; }
+}

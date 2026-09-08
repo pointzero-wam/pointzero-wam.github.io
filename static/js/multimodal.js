@@ -4,16 +4,39 @@
    All panels share one WebGL context (blitted into per-panel 2D canvases), the
    same camera and one playhead, so the only thing that differs between tiles is
    the sampled trajectory. The dense cloud is subsampled - six live panels is
-   six times the per-frame kNN work of the hero viewer. */
+   six times the per-frame kNN work of the hero viewer.
+
+   Every <scene>_mm entry in the manifest is offered in a dropdown, ordered by
+   how much the samples actually disagree (measured, see ORDER), so the scenes
+   can be compared side by side rather than one being hard-coded. */
 (function () {
   'use strict';
   var host = document.getElementById('multimodal-figure');
   if (!host) return;
 
   var BASE = 'static/hero_data/';
-  var KEY = 'towel_mm';
-  var VIEW = [20, 28, 1.40];        // az, el, distance scale (towel, as on the page)
   var STRIDE = 3;                   // keep every Nth display point
+
+  /* az, el, distance scale, look-at point. Solved offline by tools/mm_views.py:
+     the distance frames the object cloud over the whole clip and the whole
+     orbit, and the look-at point is nudged off the scene-box centre so the
+     object sits in the middle of the panel under this downward view. */
+  var VIEWS = {
+    uniqlo_sweater_mm: [20, 28, 0.92, [0.1170, -0.5309, -0.6920]],
+    amazon_notebook_mm: [20, 28, 0.82, [-0.0555, -0.5847, -0.5022]],
+    towel_mm: [20, 28, 1.09, [-0.0488, -0.5001, -0.5093]],
+    shorts_mm: [20, 28, 1.31, [-0.0704, -0.4825, -0.6503]],
+    cloth_mm: [15, 24, 0.81, [-0.0413, -0.2090, -0.3122]],
+    stapler_mm: [24, 20, 1.20, [-0.0426, -0.3352, -0.4060]],
+    heater_box_mm: [20, 28, 1.34, [0.0585, -0.3644, -0.6529]],
+    trash_mm: [55, 30, 1.26, [-0.0609, -0.1041, -0.5282]]
+  };
+  var DEFAULT_VIEW = [20, 28, 1.1];
+  // strongest demonstration first; measured spread and how different the five
+  // samples actually look (tools/mm_rank.py, tools/mm_samples_sheet.py)
+  var ORDER = ['amazon_notebook_mm', 'towel_mm', 'uniqlo_sweater_mm', 'shorts_mm',
+               'cloth_mm', 'stapler_mm', 'heater_box_mm', 'trash_mm'];
+  var START = 'towel_mm';
 
   function part(buf, man, name) {
     var p = man.parts[name];
@@ -72,7 +95,8 @@
     return SR;
   }
 
-  function build(man, buf) {
+  /* ---------------------------------------------------------------- one scene */
+  function makeScene(key, man, buf, grid) {
     var lo = man.lo, hi = man.hi, T = man.T, K = man.K;
     var diag = Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
     var bg = dequant(part(buf, man, 'bg_pos'), lo, hi, man.n_bg);
@@ -114,7 +138,7 @@
       var canvas = cell.querySelector('canvas');
       var ctx2 = canvas.getContext('2d');
       var scene = new THREE.Scene();
-      var cam = new THREE.PerspectiveCamera(42, 16 / 9, 0.01, 50);
+      var cam = new THREE.PerspectiveCamera(42, 16 / 10, 0.01, 50);
       function pts(pos, col, size) {
         var g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.BufferAttribute(pos.slice(), 3));
@@ -131,8 +155,6 @@
                     attr: op.geometry.getAttribute('position'), variant: variant });
     }
 
-    var wrap = document.createElement('div');
-    wrap.className = 'mm-grid';
     var labels = [];
     for (var s = 0; s < man.n_var; s++) labels.push({ t: 'sample ' + (s + 1), v: s, u: false });
     labels.push({ t: 'where they disagree', v: 0, u: true });
@@ -140,72 +162,154 @@
       var cell = document.createElement('figure');
       cell.className = 'mm-cell' + (L.u ? ' is-unc' : '');
       cell.innerHTML = '<canvas></canvas><figcaption>' + L.t + '</figcaption>';
-      wrap.appendChild(cell);
+      grid.appendChild(cell);
       panel(cell, L.v, L.u);
     });
-    host.appendChild(wrap);
-    var leg = document.createElement('div');
-    leg.className = 'mm-legend';
+
+    var view = VIEWS[key] || DEFAULT_VIEW;
+    var ctr = view[3] || man.center;
+    return { panels: panels, frames: frames, T: T, K: K, NO: NO, base: base,
+             ni: ni, nw: nw, view: view, ctr: ctr, diag: diag,
+             lerp: new Float32Array(man.n_trk * 3) };
+  }
+
+  function dispose(S) {
+    if (!S) return;
+    S.panels.forEach(function (P) {
+      P.scene.traverse(function (o) {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) o.material.dispose();
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------------ widget */
+  var bar = document.createElement('div');
+  bar.className = 'mm-bar';
+  var grid = document.createElement('div');
+  grid.className = 'mm-grid';
+  var leg = document.createElement('div');
+  leg.className = 'mm-legend';
+  host.appendChild(bar); host.appendChild(grid); host.appendChild(leg);
+
+  var CUR = null, t0 = performance.now(), visible = true, running = false;
+  var cache = {};
+
+  function legend(man) {
     leg.innerHTML = '<span class="mm-key"><i class="mm-sw mm-sw-lo"></i>agree (' +
       man.spread_lo_mm + ' mm)</span><span class="mm-key"><i class="mm-sw mm-sw-hi"></i>disagree (' +
       man.spread_hi_mm + ' mm)</span><span class="mm-note-i">same input, same conditioning track &mdash; only the noise draw differs</span>';
-    host.appendChild(leg);
+  }
 
-    var lerp = new Float32Array(man.n_trk * 3);
-    var t0 = performance.now(), visible = true;
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (es) {
-        es.forEach(function (e) { visible = e.isIntersecting; });
-      }, { rootMargin: '150px' }).observe(host);
-    }
-
-    function frame() {
-      requestAnimationFrame(frame);
-      if (!visible) return;
-      var el = (performance.now() - t0) / 1000;
-      var ph = (el % 4.0) / 4.0 * (T - 1);           // one 4 s loop, shared by all panels
-      var i0 = Math.floor(ph), i1 = Math.min(T - 1, i0 + 1), a = ph - i0;
-      var az = (VIEW[0] + Math.sin(el * 0.18) * 9) * Math.PI / 180, elv = VIEW[1] * Math.PI / 180;
-      var dist = diag * 0.62 * VIEW[2];
-      var R = shared();
-      panels.forEach(function (P) {
-        var A = frames[P.variant][i0], B = frames[P.variant][i1], Z = frames[P.variant][0];
-        for (var q = 0; q < lerp.length; q++) lerp[q] = A[q] + (B[q] - A[q]) * a - Z[q];
-        var dst = P.attr.array;
-        for (var i = 0; i < NO; i++) {
-          var dx = 0, dy = 0, dz = 0, o = i * K;
-          for (var k = 0; k < K; k++) {
-            var w = nw[o + k], ji = ni[o + k] * 3;
-            dx += w * lerp[ji]; dy += w * lerp[ji + 1]; dz += w * lerp[ji + 2];
-          }
-          dst[3 * i] = base[3 * i] + dx; dst[3 * i + 1] = base[3 * i + 1] + dy;
-          dst[3 * i + 2] = base[3 * i + 2] + dz;
+  function frame() {
+    requestAnimationFrame(frame);
+    if (!visible || !CUR) return;
+    var S = CUR, T = S.T, K = S.K, NO = S.NO, lerp = S.lerp;
+    var el = (performance.now() - t0) / 1000;
+    var ph = (el % 4.0) / 4.0 * (T - 1);           // one 4 s loop, shared by all panels
+    var i0 = Math.floor(ph), i1 = Math.min(T - 1, i0 + 1), a = ph - i0;
+    var az = (S.view[0] + Math.sin(el * 0.18) * 9) * Math.PI / 180;
+    var elv = S.view[1] * Math.PI / 180;
+    var dist = S.diag * 0.62 * S.view[2];
+    var R = shared();
+    S.panels.forEach(function (P) {
+      var A = S.frames[P.variant][i0], B = S.frames[P.variant][i1], Z = S.frames[P.variant][0];
+      for (var q = 0; q < lerp.length; q++) lerp[q] = A[q] + (B[q] - A[q]) * a - Z[q];
+      var dst = P.attr.array;
+      for (var i = 0; i < NO; i++) {
+        var dx = 0, dy = 0, dz = 0, o = i * K;
+        for (var k = 0; k < K; k++) {
+          var w = S.nw[o + k], ji = S.ni[o + k] * 3;
+          dx += w * lerp[ji]; dy += w * lerp[ji + 1]; dz += w * lerp[ji + 2];
         }
-        P.attr.needsUpdate = true;
-        var cw = Math.round(P.canvas.clientWidth || 240), ch = Math.round(P.canvas.clientHeight || 150);
-        if (!cw || !ch) return;
-        if (P.canvas.width !== cw || P.canvas.height !== ch) { P.canvas.width = cw; P.canvas.height = ch; }
-        P.cam.position.set(man.center[0] + dist * Math.cos(elv) * Math.sin(az),
-                           man.center[1] + dist * Math.sin(elv),
-                           man.center[2] + dist * Math.cos(elv) * Math.cos(az));
-        P.cam.lookAt(man.center[0], man.center[1], man.center[2]);
-        P.cam.aspect = cw / ch; P.cam.updateProjectionMatrix();
-        R.setSize(cw, ch, false);
-        R.render(P.scene, P.cam);
-        P.ctx.clearRect(0, 0, cw, ch);
-        P.ctx.drawImage(SRC, 0, 0, cw, ch);
-      });
-    }
-    frame();
+        dst[3 * i] = S.base[3 * i] + dx; dst[3 * i + 1] = S.base[3 * i + 1] + dy;
+        dst[3 * i + 2] = S.base[3 * i + 2] + dz;
+      }
+      P.attr.needsUpdate = true;
+      var cw = Math.round(P.canvas.clientWidth || 240), ch = Math.round(P.canvas.clientHeight || 150);
+      if (!cw || !ch) return;
+      if (P.canvas.width !== cw || P.canvas.height !== ch) { P.canvas.width = cw; P.canvas.height = ch; }
+      P.cam.position.set(S.ctr[0] + dist * Math.cos(elv) * Math.sin(az),
+                         S.ctr[1] + dist * Math.sin(elv),
+                         S.ctr[2] + dist * Math.cos(elv) * Math.cos(az));
+      P.cam.lookAt(S.ctr[0], S.ctr[1], S.ctr[2]);
+      P.cam.aspect = cw / ch; P.cam.updateProjectionMatrix();
+      R.setSize(cw, ch, false);
+      R.render(P.scene, P.cam);
+      P.ctx.clearRect(0, 0, cw, ch);
+      P.ctx.drawImage(SRC, 0, 0, cw, ch);
+    });
+  }
+
+  function show(manifest, key, sel) {
+    var man = manifest.scenes[key];
+    if (sel) sel.disabled = true;
+    host.classList.add('is-loading');
+    var got = cache[key] ? Promise.resolve(cache[key])
+                         : fetch(BASE + key + '.bin').then(function (r) { return r.arrayBuffer(); })
+                             .then(function (b) { cache[key] = b; return b; });
+    return got.then(function (buf) {
+      dispose(CUR);
+      CUR = null;
+      grid.innerHTML = '';
+      CUR = makeScene(key, man, buf, grid);
+      legend(man);
+      t0 = performance.now();
+      host.classList.remove('is-loading');
+      if (sel) { sel.disabled = false; sel.value = key; }
+      if (!running) { running = true; frame(); }
+    });
   }
 
   fetch(BASE + 'manifest.json?t=' + Date.now())
     .then(function (r) { return r.json(); })
-    .then(function (m) {
-      var man = m.scenes[KEY];
-      if (!man) throw new Error('no ' + KEY + ' in manifest');
-      return fetch(BASE + KEY + '.bin').then(function (r) { return r.arrayBuffer(); })
-        .then(function (b) { build(man, b); });
+    .then(function (manifest) {
+      var keys = Object.keys(manifest.scenes).filter(function (k) {
+        return /_mm$/.test(k) && manifest.scenes[k].mode === 'mm';
+      });
+      if (!keys.length) throw new Error('no *_mm scenes in manifest');
+      keys.sort(function (a, b) {
+        var ia = ORDER.indexOf(a), ib = ORDER.indexOf(b);
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      });
+      // ?mm=<key> opens straight on one scene, for screenshotting a comparison
+      var want = (location.search.match(/[?&]mm=([A-Za-z0-9_]+)/) || [])[1] || START;
+      if (want && keys.indexOf(want) < 0 && keys.indexOf(want + '_mm') >= 0) want += '_mm';
+      var start = keys.indexOf(want) >= 0 ? want : keys[0];
+
+      var sel = document.createElement('select');
+      sel.className = 'mm-select';
+      sel.setAttribute('aria-label', 'multi-sample scene');
+      keys.forEach(function (k) {
+        var m = manifest.scenes[k];
+        // follow the parent scene's label, so renaming a scene renames it here
+        var parent = manifest.scenes[k.replace(/_mm$/, '')];
+        var o = document.createElement('option');
+        o.value = k;
+        o.textContent = ((parent && parent.label) || m.label) + '  —  spread ' +
+                        m.spread_lo_mm + '–' + m.spread_hi_mm + ' mm';
+        sel.appendChild(o);
+      });
+      var lab = document.createElement('label');
+      lab.className = 'mm-pick';
+      lab.innerHTML = '<span>scene</span>';
+      lab.appendChild(sel);
+      bar.appendChild(lab);
+      sel.addEventListener('change', function () {
+        show(manifest, sel.value, sel).catch(function (e) {
+          // a failed swap must not leave the picker stuck disabled
+          host.classList.remove('is-loading');
+          sel.disabled = false;
+          console.error('multimodal', e);
+        });
+      });
+
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (es) {
+          es.forEach(function (e) { visible = e.isIntersecting; });
+        }, { rootMargin: '150px' }).observe(host);
+      }
+      return show(manifest, start, sel);
     })
     .catch(function (e) {
       host.innerHTML = '<p class="pz-note">multi-sample figure failed to load</p>';
