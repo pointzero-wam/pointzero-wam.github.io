@@ -123,6 +123,16 @@
     var objColF = tone(objC, NO, gain, keep);
     var uncColF = plain(uncC, NO, keep);
 
+    var grasp = null, nGrasp = 0;
+    if (man.graspers && man.graspers.length) {
+      nGrasp = man.graspers[0].length;
+      grasp = new Float32Array(T * nGrasp * 3);
+      for (var gt = 0; gt < T; gt++)
+        for (var gg = 0; gg < nGrasp; gg++)
+          for (var gc = 0; gc < 3; gc++)
+            grasp[(gt * nGrasp + gg) * 3 + gc] = man.graspers[gt][gg][gc];
+    }
+
     var frames = [];
     for (var v = 0; v < man.n_var; v++) {
       var f = [];
@@ -151,8 +161,34 @@
       scene.add(pts(bg, bgCol, diag * 0.016));
       var op = pts(base, useUnc ? uncColF : objColF, diag * 0.020);
       scene.add(op);
+      // the conditioning track: identical across every panel, because it is the
+      // input. Drawn in full (the model is given the whole thing) with a marker
+      // riding the playhead so it reads as the cue the samples respond to.
+      var head = null;
+      if (grasp && grasp.length > 1) {
+        // a tube, not a Line: WebGL caps linewidth at 1px, so a Line would be a
+        // hairline at panel size. Radius/marker follow hero.js's 'slim' scale.
+        for (var gi = 0; gi < nGrasp; gi++) {
+          var cp = [];
+          for (var t = 0; t < T; t++)
+            cp.push(new THREE.Vector3(grasp[(t * nGrasp + gi) * 3],
+                                      grasp[(t * nGrasp + gi) * 3 + 1],
+                                      grasp[(t * nGrasp + gi) * 3 + 2]));
+          var curve = new THREE.CatmullRomCurve3(cp);
+          scene.add(new THREE.Mesh(
+            new THREE.TubeGeometry(curve, 64, diag * 0.0030, 8, false),
+            new THREE.MeshBasicMaterial({ color: 0xe0662a,
+              transparent: true, opacity: useUnc ? 0.5 : 0.95 })));
+        }
+        head = new THREE.Mesh(
+          new THREE.SphereGeometry(diag * 0.0090, 16, 12),
+          new THREE.MeshBasicMaterial({ color: 0xe0662a,
+            transparent: true, opacity: useUnc ? 0.55 : 1 }));
+        scene.add(head);
+      }
       panels.push({ canvas: canvas, ctx: ctx2, scene: scene, cam: cam,
-                    attr: op.geometry.getAttribute('position'), variant: variant });
+                    attr: op.geometry.getAttribute('position'), variant: variant,
+                    head: head });
     }
 
     var labels = [];
@@ -169,6 +205,7 @@
     var view = VIEWS[key] || DEFAULT_VIEW;
     var ctr = view[3] || man.center;
     return { panels: panels, frames: frames, T: T, K: K, NO: NO, base: base,
+             grasp: grasp, nGrasp: nGrasp,
              ni: ni, nw: nw, view: view, ctr: ctr, diag: diag,
              lerp: new Float32Array(man.n_trk * 3) };
   }
@@ -226,6 +263,13 @@
         dst[3 * i + 2] = S.base[3 * i + 2] + dz;
       }
       P.attr.needsUpdate = true;
+      if (P.head && S.grasp) {
+        var gi0 = i0 * S.nGrasp * 3, gi1 = i1 * S.nGrasp * 3;
+        P.head.position.set(
+          S.grasp[gi0] + (S.grasp[gi1] - S.grasp[gi0]) * a,
+          S.grasp[gi0 + 1] + (S.grasp[gi1 + 1] - S.grasp[gi0 + 1]) * a,
+          S.grasp[gi0 + 2] + (S.grasp[gi1 + 2] - S.grasp[gi0 + 2]) * a);
+      }
       var cw = Math.round(P.canvas.clientWidth || 240), ch = Math.round(P.canvas.clientHeight || 150);
       if (!cw || !ch) return;
       if (P.canvas.width !== cw || P.canvas.height !== ch) { P.canvas.width = cw; P.canvas.height = ch; }
