@@ -360,23 +360,29 @@
     anim.graspers = man.graspers; anim.spheres = []; anim.tubes = [];
     var TUBE_SEGS = (man.T - 1) * 8;
     for (var gi = 0; gi < G; gi++) {
-      var pts = [];
+      // Repeated samples encode pauses. Keep their timing, but omit consecutive
+      // duplicates from the curve: a zero initial tangent collapses the tube's
+      // Frenet frame (paperbag starts with four identical EEF positions).
+      var pts = [], knotIndices = [];
       for (var t = 0; t < man.T; t++) {
         var p = man.graspers[t][gi];
-        pts.push(new THREE.Vector3(p[0], p[1], p[2]));
+        var point = new THREE.Vector3(p[0], p[1], p[2]);
+        if (!pts.length || !point.equals(pts[pts.length - 1])) pts.push(point);
+        knotIndices.push(pts.length - 1);
       }
-      var curve = new THREE.CatmullRomCurve3(pts);
-      // arc-length fraction of each knot (TubeGeometry samples uniformly by
-      // arc length, so time-based reveal desyncs from the marker when the EEF
-      // speed varies; map time -> arc fraction instead)
-      var lens = curve.getLengths(200), total = lens[lens.length - 1] || 1;
-      var knotArc = [];
-      for (var ki = 0; ki < man.T; ki++) {
-        var tt = ki / (man.T - 1);
-        var li = Math.min(199, Math.round(tt * 200));
-        knotArc.push(lens[li] / total);
-      }
-      if (withTube) {
+      var curve = pts.length > 1 ? new THREE.CatmullRomCurve3(pts) : null;
+      // Map the original sample times to arc length, including pauses and the
+      // exact endpoint. TubeGeometry samples uniformly by arc length.
+      var ARC_STEPS = 200;
+      var lens = curve ? curve.getLengths(ARC_STEPS) : null;
+      var total = lens ? lens[ARC_STEPS] : 0;
+      var knotArc = knotIndices.map(function (index) {
+        if (!total) return 0;
+        var sample = index / (pts.length - 1) * ARC_STEPS;
+        var lo = Math.floor(sample), hi = Math.min(ARC_STEPS, lo + 1);
+        return (lens[lo] + (lens[hi] - lens[lo]) * (sample - lo)) / total;
+      });
+      if (withTube && curve) {
         var tubeGeo = new THREE.TubeGeometry(curve, TUBE_SEGS, diag * (slim ? 0.0016 : 0.0032), 8, false);
         var tube = new THREE.Mesh(tubeGeo,
           new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.9 }));
@@ -391,6 +397,7 @@
       var sp = new THREE.Mesh(
         new THREE.SphereGeometry(diag * (slim ? 0.0075 : 0.010), 20, 16),
         new THREE.MeshBasicMaterial({ color: ACCENT }));
+      sp.position.copy(pts[0]);
       sp.userData.curve = curve;
       sp.userData.knotArc = knotArc;
       group.add(sp);
@@ -536,6 +543,9 @@
         }
       }
     }
+    // The captured robot/background has discrete frames. Advance its prediction
+    // on the same samples instead of smoothing only the object between frames.
+    if (anim.kind === 'ctx') playhead = Math.round(playhead);
     timeEl.textContent = isInput ? 'input' : ('t = ' + Math.round(playhead) + ' / ' + (anim.T - 1));
 
     if (anim.bgFrames) {
@@ -591,7 +601,7 @@
       for (var gi = 0; gi < anim.spheres.length; gi++) {
         var sp2 = anim.spheres[gi];
         var af = Math.max(0, Math.min(1, arcFracAt(sp2.userData, markTime)));
-        sp2.position.copy(sp2.userData.curve.getPointAt(af));
+        if (sp2.userData.curve) sp2.position.copy(sp2.userData.curve.getPointAt(af));
       }
     }
     if (!drag && idleT > 3) orb.az += dt * 0.12;
