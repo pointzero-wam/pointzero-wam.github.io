@@ -48,3 +48,41 @@
   /* keep the scrubber clear of the gutter */
   [data-pz-viewer="ctx"] .pz-bar { padding-left: 214px; }
 }
+
+/* Let the action-conditioned viewer extend beyond the text column. */
+#wam-viewer {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1200px, calc(100vw - 3rem));
+  max-width: none;
+}
+#wam-viewer .pz-stage {
+  aspect-ratio: auto;
+  height: clamp(420px, 48vw, 620px);
+}
+
+@media screen and (max-width: 779px) {
+  /* Put the reference image above the canvas instead of covering the scene. */
+  #wam-viewer .pz-stage { height: clamp(460px, 90vw, 640px); }
+  #wam-viewer .pz-canvas {
+    top: 124px;
+    height: calc(100% - 124px) !important;
+  }
+  #wam-viewer .pz-rgb-wrap {
+    top: 12px;
+    left: 12px;
+    transform: none;
+    width: 116px;
+  }
+  #wam-viewer .pz-rgb { width: 116px; max-height: 86px; object-fit: contain; }
+  #wam-viewer .pz-phase {
+    top: 24px;
+    left: 140px;
+    right: 12px;
+    transform: none;
+  }
+  #wam-viewer .pz-phase-main { font-size: 0.9rem; padding: 0.2rem 0.5rem; }
+  #wam-viewer .pz-hint { display: none; }
+  #wam-viewer .pz-scrub { min-width: 0; }
+}

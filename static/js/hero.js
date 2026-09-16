@@ -414,6 +414,8 @@
     orb.az = v[0] * Math.PI / 180;
     orb.el = v[1] * Math.PI / 180;
     orb.dist = diag * 0.62 * v[2];
+    // Leave room around the captured robot and the full object motion.
+    if (man.kind === 'ctx') orb.dist *= 1.65;
     orb.target.set(man.center[0], man.center[1], man.center[2]);
     anim = { kind: man.kind, T: man.T, twoPhase: (man.kind === 'real' || man.kind === 'ctx') };
 
