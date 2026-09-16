@@ -467,7 +467,7 @@
     });
 
     W.tick = function (dt) {
-      if (!st.visible) return;
+      if (!st.visible || !canvas.clientWidth || !canvas.clientHeight) return;
       st.az += dt * 0.15; st.t += dt;
       var ce = Math.cos(st.el), se = Math.sin(st.el);
       cam.position.set(st.tgt.x + st.dist * ce * Math.sin(st.az),
@@ -569,7 +569,7 @@
   };
 
   function buildSchematic() {
-    hintEl.textContent = 'live 3D — hover any panel, drag the denoising slider';
+    hintEl.textContent = 'Live 3D — select a panel for details, or scrub the denoising steps.';
     widgets.length = 0;
     DIT.subs.length = 0;
     DIT.u = 1; DIT.ph = DIT.frac();      // open on the resolved trajectory
@@ -581,6 +581,9 @@
     host.className = 'mf-flow';
 
     function attach(f, k) {
+      f.tabIndex = 0;
+      f.setAttribute('aria-label', CARDS[k].title);
+      f.addEventListener('focusin', function () { info(CARDS[k].title, CARDS[k].body); });
       f.addEventListener('mouseenter', function () { info(CARDS[k].title, CARDS[k].body); });
       f.addEventListener('click', function () { info(CARDS[k].title, CARDS[k].body); });
     }
@@ -630,7 +633,7 @@
       var bar = document.createElement('div');
       bar.className = 'mf-dit-scrub-row';
       bar.innerHTML =
-        '<button type="button" class="mf-dit-play" title="pause / play">&#10074;&#10074;</button>' +
+        '<button type="button" class="mf-dit-play" title="Pause denoising" aria-label="Pause denoising">&#10074;&#10074;</button>' +
         '<input class="mf-dit-scrub" type="range" min="0" max="1000" step="1" value="0" ' +
         'aria-label="scrub the denoising steps">' +
         '<span class="mf-dit-read"></span>';
@@ -669,7 +672,7 @@
             function jump(ev) { ev.stopPropagation(); DIT.goStep(j + 1); }
             el.addEventListener('click', jump);
             el.addEventListener('keydown', function (ev) {
-              if (ev.key === 'Enter' || ev.key === ' ') jump(ev);
+              if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); jump(ev); }
             });
           })(i, b);
         }
@@ -700,6 +703,8 @@
         DIT.hold = 0;
         play.innerHTML = DIT.playing ? '&#10074;&#10074;' : '&#9654;';
         play.classList.toggle('is-paused', !DIT.playing);
+        play.setAttribute('aria-label', DIT.playing ? 'Pause denoising' : 'Play denoising');
+        play.title = play.getAttribute('aria-label');
       });
 
       // ---- clock drives the chips, the readout and the slider knob --------
@@ -729,7 +734,7 @@
       DIT.emit();
     }
 
-    var ci = document.createElement('div'); ci.className = 'mf-fcol';
+    var ci = document.createElement('div'); ci.className = 'mf-fcol mf-fcol-inputs';
     ci.innerHTML = '<span class="mf-col-label">inputs</span>';
     ci.appendChild(w3d(SCENE, 'cloud', 'Observed point cloud', 'cloud'));
     ci.appendChild(w3d(SCENE, 'track', 'Partial point tracks', 'track'));
@@ -749,8 +754,18 @@
       '<span>patches &rarr; Perceiver-IO &rarr; a few tokens</span></div>' +
       '<figcaption>DINOv2 features + Perceiver-IO</figcaption>';
     attach(dcard, 'dino');
-    dcard.querySelector('.mf-pio-inline').addEventListener('mouseenter', function (ev) {
+    var perceiver = dcard.querySelector('.mf-pio-inline');
+    perceiver.tabIndex = 0;
+    perceiver.setAttribute('role', 'button');
+    perceiver.setAttribute('aria-label', 'Explain Perceiver-IO token compression');
+    function explainPerceiver(ev) {
       ev.stopPropagation(); info(CARDS.perceiver.title, CARDS.perceiver.body);
+    }
+    ['mouseenter', 'click', 'focusin'].forEach(function (event) {
+      perceiver.addEventListener(event, explainPerceiver);
+    });
+    perceiver.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); explainPerceiver(ev); }
     });
     ci.appendChild(dcard);
 
@@ -758,11 +773,11 @@
     cd.innerHTML = '<span class="mf-col-label">Diffusion Transformer (DiT)</span>';
     cd.appendChild(w3d(SCENE, 'denoise', 'noise &rarr; a 3D trajectory per point', 'denoise', true));
 
-    var co = document.createElement('div'); co.className = 'mf-fcol';
+    var co = document.createElement('div'); co.className = 'mf-fcol mf-fcol-outputs';
     co.innerHTML = '<span class="mf-col-label">outputs</span>';
     co.appendChild(w3d(SCENE, 'pred', 'Dense 3D point tracks', 'pred'));
     co.appendChild(w3d(WAM, 'wam', 'Action-conditioned dynamics', 'wam', false, true));
-    var vcard = document.createElement('figure'); vcard.className = 'mf-w';
+    var vcard = document.createElement('figure'); vcard.className = 'mf-w mf-policy-card';
     vcard.innerHTML = '<video class="mf-w-vid" autoplay muted loop playsinline preload="metadata" ' +
       'poster="static/method/rollout_blockstack.jpg">' +
       '<source src="static/method/rollout_blockstack.mp4" type="video/mp4"></video>' +
@@ -772,9 +787,78 @@
 
     function arrow() { var a = document.createElement('div'); a.className = 'mf-arrow'; a.innerHTML = '&rsaquo;'; return a; }
     [ci, arrow(), cd, arrow(), co].forEach(function (n) { host.appendChild(n); });
-    stage.innerHTML = ''; stage.appendChild(host);
-    info('PointZero, end to end',
-      'One transformer takes an observed point cloud, a couple of partial tracks and DINOv2 vision, and denoises a future trajectory for every point. Every 3D panel here is live, running real model output.');
+    stage.innerHTML = '';
+
+    // On phones, show one pipeline stage at a time. Keep the same live cards
+    // in the DOM so switching tabs preserves the sampler and slider state.
+    var mobile = window.matchMedia('(max-width: 760px)');
+    var panels = [ci, cd, co], labels = ['Inputs', 'Model', 'Outputs'];
+    var summaries = [
+      ['Inputs', 'An observed point cloud, partial point tracks and DINOv2 features condition the model. Select a card to explore each input.'],
+      [CARDS.denoise.title, CARDS.denoise.body],
+      ['Outputs', 'The model predicts dense 3D point tracks. Post-training adapts it for action-conditioned dynamics and robot manipulation. Select a card for details.']
+    ];
+    var active = 0, tabs = [];
+    var tablist = document.createElement('div');
+    tablist.className = 'mf-mobile-tabs';
+    tablist.setAttribute('role', 'tablist');
+    tablist.setAttribute('aria-label', 'Explore the PointZero method');
+    panels.forEach(function (panel, i) {
+      panel.id = 'mf-panel-' + labels[i].toLowerCase();
+      var tab = document.createElement('button');
+      tab.type = 'button'; tab.className = 'mf-mobile-tab';
+      tab.id = 'mf-tab-' + labels[i].toLowerCase();
+      tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-controls', panel.id);
+      tab.innerHTML = '<span aria-hidden="true">' + (i + 1) + '</span> ' + labels[i];
+      tab.addEventListener('click', function () { showStep(i); });
+      tab.addEventListener('keydown', function (ev) {
+        var next = active;
+        if (ev.key === 'ArrowRight') next = (active + 1) % tabs.length;
+        else if (ev.key === 'ArrowLeft') next = (active + tabs.length - 1) % tabs.length;
+        else if (ev.key === 'Home') next = 0;
+        else if (ev.key === 'End') next = tabs.length - 1;
+        else return;
+        ev.preventDefault(); showStep(next); tabs[next].focus();
+      });
+      tabs.push(tab); tablist.appendChild(tab);
+    });
+    stage.appendChild(tablist); stage.appendChild(host);
+    function showStep(index) {
+      active = index;
+      tablist.hidden = !mobile.matches;
+      panels.forEach(function (panel, i) {
+        panel.hidden = mobile.matches && i !== active;
+        panel.setAttribute('role', mobile.matches ? 'tabpanel' : 'group');
+        panel.setAttribute('aria-label', labels[i]);
+        if (mobile.matches) panel.setAttribute('aria-labelledby', tabs[i].id);
+        else panel.removeAttribute('aria-labelledby');
+        tabs[i].setAttribute('aria-selected', String(i === active));
+        tabs[i].tabIndex = i === active ? 0 : -1;
+      });
+      var video = vcard.querySelector('video');
+      if (co.hidden) video.pause();
+      else {
+        var playResult = video.play();
+        if (playResult) playResult.catch(function () {});
+      }
+      if (mobile.matches) info(summaries[active][0], summaries[active][1]);
+      else info('PointZero, end to end',
+        'One transformer takes an observed point cloud, a couple of partial tracks and DINOv2 vision, and denoises a future trajectory for every point. Every 3D panel here is live, running real model output.');
+    }
+    function updateLayout() {
+      // A resize may hide the currently focused panel or mobile tab strip.
+      var previousFocus = document.activeElement;
+      var focusWasInMethod = stage.contains(previousFocus);
+      showStep(active);
+      if (focusWasInMethod && !previousFocus.getClientRects().length) {
+        if (mobile.matches) tabs[active].focus();
+        else panels[active].querySelector('.mf-w').focus();
+      }
+    }
+    if (mobile.addEventListener) mobile.addEventListener('change', updateLayout);
+    else mobile.addListener(updateLayout);
+    showStep(active);
     if (!rafOn && window.THREE) { rafOn = true; requestAnimationFrame(loop); }
   }
 

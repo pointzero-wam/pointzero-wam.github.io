@@ -63,26 +63,34 @@
 }
 
 @media screen and (max-width: 779px) {
-  /* Put the reference image above the canvas instead of covering the scene. */
+  /* Both viewers reserve a header band for the reference image and phase. */
+  #hero-viewer .pz-stage { aspect-ratio: auto; height: clamp(420px, 90vw, 560px); }
   #wam-viewer .pz-stage { height: clamp(460px, 90vw, 640px); }
+  #hero-viewer .pz-canvas,
   #wam-viewer .pz-canvas {
     top: 124px;
     height: calc(100% - 124px) !important;
   }
+  #hero-viewer .pz-rgb-wrap,
   #wam-viewer .pz-rgb-wrap {
     top: 12px;
     left: 12px;
     transform: none;
     width: 116px;
   }
+  #hero-viewer .pz-rgb,
   #wam-viewer .pz-rgb { width: 116px; max-height: 86px; object-fit: contain; }
+  #hero-viewer .pz-phase,
   #wam-viewer .pz-phase {
     top: 24px;
     left: 140px;
     right: 12px;
     transform: none;
   }
-  #wam-viewer .pz-phase-main { font-size: 0.9rem; padding: 0.2rem 0.5rem; }
+  #hero-viewer .pz-phase-main,
+  #wam-viewer .pz-phase-main { font-size: 0.9rem; padding: 0.2rem 0.5rem; max-width: 100%; }
+  #hero-viewer .pz-hint,
   #wam-viewer .pz-hint { display: none; }
+  #hero-viewer .pz-scrub,
   #wam-viewer .pz-scrub { min-width: 0; }
 }

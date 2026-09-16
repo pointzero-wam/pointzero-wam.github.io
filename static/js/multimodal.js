@@ -36,7 +36,7 @@
   // samples actually look (tools/mm_rank.py, tools/mm_samples_sheet.py)
   var ORDER = ['amazon_notebook_mm', 'towel_mm', 'uniqlo_sweater_mm', 'shorts_mm',
                'cloth_mm', 'stapler_mm', 'heater_box_mm', 'trash_mm'];
-  var START = 'towel_mm';
+  var START = 'amazon_notebook_mm';
 
   function part(buf, man, name) {
     var p = man.parts[name];

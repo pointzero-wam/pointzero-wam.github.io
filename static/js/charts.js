@@ -34,27 +34,67 @@
 
   var tip = document.createElement('div');
   tip.className = 'ch-tip'; tip.style.display = 'none';
+  tip.id = 'chart-value-tooltip'; tip.setAttribute('role', 'tooltip');
   document.body.appendChild(tip);
+
+  function scaleMax(chart, metric, groups) {
+    var vals = [];
+    chart.series.forEach(function (series) {
+      groups.forEach(function (group) {
+        var v = series.data[group] && series.data[group][metric];
+        if (v !== null && v !== undefined) vals.push(v);
+      });
+    });
+    var dmax = Math.max.apply(null, vals.concat([0]));
+    return (chart.axis_max && dmax <= chart.axis_max)
+      ? chart.axis_max : (dmax > 0 ? nice(dmax * 1.02) : 1);
+  }
+
+  function placeTip(x, y) {
+    var left = Math.min(x + 14, window.innerWidth - tip.offsetWidth - 12);
+    var top = Math.min(y - 10, window.innerHeight - tip.offsetHeight - 12);
+    tip.style.left = Math.max(12, left) + 'px';
+    tip.style.top = (Math.max(12, top) + window.scrollY) + 'px';
+  }
+
+  function barTip(bar, chart, series, group, metric, value) {
+    var label = series.name + ', ' + group + ', ' + metric + ': ' + value;
+    bar.setAttribute('tabindex', '0');
+    bar.setAttribute('role', 'img');
+    bar.setAttribute('aria-label', label + '. ' + chart.unit);
+    var title = el('title', {});
+    title.textContent = label;
+    bar.appendChild(title);
+    function show(ev) {
+      tip.innerHTML = '<b>' + series.name + '</b><br>' + group + ' · ' + metric +
+        '<br><span class="ch-tip-v">' + value + '</span>';
+      tip.style.display = 'block';
+      var rect = bar.getBoundingClientRect();
+      placeTip(ev && ev.clientX !== undefined ? ev.clientX : rect.right,
+        ev && ev.clientY !== undefined ? ev.clientY : rect.top);
+    }
+    bar.addEventListener('mouseenter', show);
+    bar.addEventListener('mousemove', function (ev) { placeTip(ev.clientX, ev.clientY); });
+    bar.addEventListener('mouseleave', function () {
+      if (document.activeElement !== bar) tip.style.display = 'none';
+    });
+    bar.addEventListener('focus', show);
+    bar.addEventListener('click', show);
+    bar.addEventListener('blur', function () { tip.style.display = 'none'; });
+    bar.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') tip.style.display = 'none';
+    });
+  }
+  document.addEventListener('click', function (ev) {
+    if (!ev.target.closest('.ch-bar')) tip.style.display = 'none';
+  });
 
   function panel(chart, metric, groups, width, height, showAxisLabel) {
     var mL = 46, mR = 8, mT = 10, mB = 42;
     var svg = el('svg', { viewBox: '0 0 ' + width + ' ' + height, class: 'ch-svg' });
     var iw = width - mL - mR, ih = height - mT - mB;
-    var vals = [];
-    chart.series.forEach(function (s) {
-      groups.forEach(function (g) {
-        var v = s.data[g] && s.data[g][metric];
-        if (v !== null && v !== undefined) vals.push(v);
-      });
-    });
-    /* A bounded scale (a percentage) stops at its own ceiling: without this,
-       nice() rounds a 100.0 max up to 150 and the top third of the plot is dead
-       space, which makes a perfect score read as middling. Error metrics are
-       open-ended and declare no axis_max, so they keep the auto-scale. The
-       dmax guard means a value above the declared ceiling falls back to
-       auto-scaling rather than being clipped. */
-    var dmax = Math.max.apply(null, vals);
-    var max = (chart.axis_max && dmax <= chart.axis_max) ? chart.axis_max : nice(dmax * 1.02);
+    // Percentages keep their declared ceiling; errors use a shared auto scale.
+    var max = scaleMax(chart, metric, groups);
 
     // Whole-number ticks print without a pointless ".0" (0/25/50/75/100).
     var whole = [0, 1, 2, 3, 4].every(function (t) {
@@ -88,18 +128,7 @@
         var h = Math.max(2, v / max * ih);
         var r = el('rect', { x: x, y: mT + ih - h, width: bw, height: h, rx: Math.min(4, bw / 2),
           fill: s.color, class: 'ch-bar' });
-        r.addEventListener('mouseenter', function (ev) {
-          tip.innerHTML = '<b>' + s.name + '</b><br>' + g + ' · ' + metric +
-            '<br><span class="ch-tip-v">' + fmt(v) + '</span>';
-          tip.style.display = 'block';
-          tip.style.left = (ev.clientX + 14) + 'px';
-          tip.style.top = (ev.clientY + window.scrollY - 10) + 'px';
-        });
-        r.addEventListener('mousemove', function (ev) {
-          tip.style.left = (ev.clientX + 14) + 'px';
-          tip.style.top = (ev.clientY + window.scrollY - 10) + 'px';
-        });
-        r.addEventListener('mouseleave', function () { tip.style.display = 'none'; });
+        barTip(r, chart, s, g, metric, v);
         svg.appendChild(r);
       });
       var gl = el('text', { x: mL + gi * gw + gw / 2, y: height - 24, 'text-anchor': 'middle', class: 'ch-glabel' });
@@ -119,15 +148,16 @@
   function render(chart, host) {
     var metric = chart.metrics[0];
     var wrap = document.createElement('div');
-    wrap.className = 'ch-wrap';
+    wrap.className = 'ch-wrap' + (chart.facet ? '' : ' ch-has-mobile');
+    wrap.dataset.chart = chart.id;
     wrap.innerHTML =
       '<div class="ch-controls">' +
       (chart.metrics.length > 1
         ? '<span class="ch-metrics">' + chart.metrics.map(function (m, i) {
-            return '<button class="ch-pill' + (i === 0 ? ' is-active' : '') + '" data-m="' + m + '">' + m + '</button>';
+            return '<button type="button" class="ch-pill' + (i === 0 ? ' is-active' : '') + '" aria-pressed="' + (i === 0) + '" data-m="' + m + '">' + m + '</button>';
           }).join('') + '</span>'
         : '') +
-      '<button class="ch-table-btn">show table</button></div>' +
+      '<button type="button" class="ch-table-btn" aria-expanded="false">show table</button></div>' +
       '<div class="ch-legend">' + chart.series.map(function (s) {
         return '<span class="ch-leg"><i style="background:' + s.color + '"></i>' + s.name + '</span>';
       }).join('') + '</div>' +
@@ -137,7 +167,86 @@
     host.style.display = 'none';
 
     var plots = wrap.querySelector('.ch-plots');
+    var selectedGroup = chart.groups[0];
+    var mobilePlot, mobileUnit, mobileAxis;
+    if (!chart.facet) {
+      var mobile = document.createElement('div');
+      mobile.className = 'ch-mobile';
+      mobile.setAttribute('role', 'group');
+      mobile.setAttribute('aria-label', chart.title);
+      var groupLabel = document.createElement('label');
+      groupLabel.className = 'ch-group-select';
+      groupLabel.appendChild(document.createTextNode(chart.id === 'imitation' ? 'Task' : 'Scene'));
+      var select = document.createElement('select');
+      chart.groups.forEach(function (group) {
+        var option = document.createElement('option');
+        option.value = group; option.textContent = group;
+        select.appendChild(option);
+      });
+      groupLabel.appendChild(select);
+      mobile.appendChild(groupLabel);
+      mobileUnit = document.createElement('p');
+      mobileUnit.className = 'ch-mobile-unit';
+      mobile.appendChild(mobileUnit);
+      mobilePlot = document.createElement('div');
+      mobilePlot.className = 'ch-mobile-plot';
+      mobile.appendChild(mobilePlot);
+      mobileAxis = document.createElement('div');
+      mobileAxis.className = 'ch-mobile-axis';
+      mobileAxis.setAttribute('aria-hidden', 'true');
+      mobile.appendChild(mobileAxis);
+      var scaleNote = document.createElement('p');
+      scaleNote.className = 'ch-mobile-scale';
+      scaleNote.textContent = 'Same scale across ' + (chart.id === 'imitation' ? 'tasks.' : 'scenes.');
+      mobile.appendChild(scaleNote);
+      plots.parentNode.insertBefore(mobile, plots.nextSibling);
+      select.addEventListener('change', function () {
+        selectedGroup = select.value;
+        drawMobile();
+      });
+    }
+
+    function drawMobile() {
+      if (!mobilePlot) return;
+      var max = scaleMax(chart, metric, chart.groups);
+      mobileUnit.textContent = (metric === 'SR' ? '' : metric + ' · ') + chart.unit;
+      mobilePlot.innerHTML = '';
+      chart.series.forEach(function (series) {
+        var value = series.data[selectedGroup] && series.data[selectedGroup][metric];
+        var missing = value === null || value === undefined;
+        var row = document.createElement('div');
+        row.className = 'ch-mobile-row';
+        var heading = document.createElement('div');
+        heading.className = 'ch-mobile-heading';
+        var name = document.createElement('span');
+        name.className = 'ch-leg';
+        name.textContent = series.name;
+        var number = document.createElement('span');
+        number.className = 'ch-mobile-value';
+        number.textContent = missing ? '—' : String(value) + (metric === 'SR' ? '%' : '');
+        if (missing) number.setAttribute('aria-label', 'Not reported');
+        heading.appendChild(name); heading.appendChild(number);
+        row.appendChild(heading);
+        var track = document.createElement('div');
+        track.className = 'ch-mobile-track';
+        track.setAttribute('aria-hidden', 'true');
+        var bar = document.createElement('div');
+        bar.className = 'ch-mobile-bar';
+        bar.style.width = (missing ? 0 : value / max * 100) + '%';
+        bar.style.backgroundColor = series.color;
+        track.appendChild(bar); row.appendChild(track);
+        mobilePlot.appendChild(row);
+      });
+      mobileAxis.innerHTML = '';
+      [0, max / 2, max].forEach(function (value) {
+        var tick = document.createElement('span');
+        tick.textContent = fmt(value);
+        mobileAxis.appendChild(tick);
+      });
+    }
+
     function draw() {
+      tip.style.display = 'none';
       plots.innerHTML = '';
       if (chart.facet) {
         chart.groups.forEach(function (g, i) {
@@ -150,11 +259,14 @@
       } else {
         plots.appendChild(panel(chart, metric, chart.groups, 780, 260, true));
       }
+      drawMobile();
     }
     wrap.querySelectorAll('.ch-pill').forEach(function (b) {
       b.addEventListener('click', function () {
-        wrap.querySelectorAll('.ch-pill').forEach(function (o) { o.classList.remove('is-active'); });
-        b.classList.add('is-active');
+        wrap.querySelectorAll('.ch-pill').forEach(function (o) {
+          o.classList.remove('is-active'); o.setAttribute('aria-pressed', 'false');
+        });
+        b.classList.add('is-active'); b.setAttribute('aria-pressed', 'true');
         metric = b.dataset.m;
         draw();
       });
@@ -164,6 +276,7 @@
       var on = host.style.display === 'none';
       host.style.display = on ? '' : 'none';
       tb.textContent = on ? 'hide table' : 'show table';
+      tb.setAttribute('aria-expanded', String(on));
     });
     draw();
   }
