@@ -37,6 +37,46 @@
       desc: 'Predicts next-step particle motion and rolls out sequentially in the same way as PGND, but ' +
             'with a transformer architecture.'
     },
+    'PointZero-FM-mean-10': {
+      title: 'PointZero · flow matching · mean of 10',
+      desc: 'PointZero trained with a flow-matching objective. Each metric averages the scalar errors ' +
+            'of 10 sampled predictions, rather than evaluating an averaged trajectory.'
+    },
+    'PointZero-FM-oracle-10': {
+      title: 'PointZero · flow matching · oracle of 10',
+      desc: 'PointZero trained with a flow-matching objective. For each scene and metric, the oracle ' +
+            'uses ground truth to select the lowest error among 10 sampled predictions. ' +
+            'Different metrics can select different samples.'
+    },
+    'PointZero-Regression': {
+      title: 'PointZero · direct regression',
+      desc: 'PointZero trained to directly regress a single point-trajectory prediction, ' +
+            'instead of sampling a distribution of possible trajectories.'
+    },
+    'PointZero-JiT-mean-10': {
+      title: 'PointZero · JiT · mean of 10',
+      desc: 'PointZero trained with a JiT-style clean-trajectory prediction objective. Each metric ' +
+            'averages the scalar errors of 10 sampled predictions, rather than evaluating an ' +
+            'averaged trajectory.'
+    },
+    'PointZero-JiT-oracle-10': {
+      title: 'PointZero · JiT · oracle of 10',
+      desc: 'PointZero trained with a JiT-style clean-trajectory prediction objective. For each scene ' +
+            'and metric, the oracle uses ground truth to select the lowest error among 10 sampled ' +
+            'predictions. Different metrics can select different samples.'
+    },
+    'PointZero-Scratch': {
+      title: 'PointZero · trained from scratch',
+      desc: 'PointZero trained on the downstream data without synthetic pre-training. On the ' +
+            'action-conditioned dynamics benchmark, each scene and metric reports the lowest ' +
+            'ground-truth error among 10 sampled predictions (best-of-10 oracle).'
+    },
+    'PointZero-FT': {
+      title: 'PointZero · pre-trained and fine-tuned',
+      desc: 'PointZero pre-trained on synthetic point tracks and fine-tuned on downstream data. ' +
+            'On the action-conditioned dynamics benchmark, each scene and metric reports the ' +
+            'lowest ground-truth error among 10 sampled predictions (best-of-10 oracle).'
+    },
     '3PoinTr': {
       title: '3PoinTr',
       url: 'https://arxiv.org/abs/2603.08485',
@@ -118,8 +158,8 @@
     'SR': {
       title: 'Imitation success rate',
       label: 'Success rate (%)',
-      desc: 'Percentage of evaluation trials in which the policy completes the task. Every policy is trained ' +
-            'from 20 expert demonstrations with action labels plus 100 action-free demonstration videos. ' +
+      desc: 'Percentage of evaluation trials in which the policy completes the task. PointZero is trained ' +
+            'from 20 expert demonstrations with action labels plus 100 action-free demonstration videos per task. ' +
             'Object position and orientation are varied across trials, and all methods are evaluated from the ' +
             'same initial configurations.',
       eq: term('<span class="gl-lhs">SR</span> = 100 ·') +
@@ -153,7 +193,7 @@
       if (!m) return '';
       return '<span class="gl-h">' + m.title + '</span>' +
              '<span class="gl-b">' + m.desc + '</span>' +
-             '<a class="gl-more" href="' + m.url + '" target="_blank" rel="noreferrer">project page ↗</a>';
+             (m.url ? '<a class="gl-more" href="' + m.url + '" target="_blank" rel="noreferrer">project page ↗</a>' : '');
     }
     var q = METRICS[key];
     if (!q) return '';
@@ -256,15 +296,21 @@
 
   /* ------------------------------------------------------------ annotation */
 
-  // A cell whose entire text is a baseline name -> link + chip.
+  // A method name -> optional external link + chip; retain PointZero styling.
   function decorateMethodCell(cell, key) {
     var m = METHODS[key];
     cell.setAttribute('data-gl', '1');
     var text = cell.textContent.trim();
-    cell.textContent = '';
     var wrap = document.createElement('span');
     wrap.className = 'gl-name';
-    wrap.appendChild(m.url ? link(m.url, text) : document.createTextNode(text));
+    if (m.url) {
+      cell.textContent = '';
+      wrap.appendChild(link(m.url, text));
+    } else {
+      var name = document.createElement('span');
+      while (cell.firstChild) name.appendChild(cell.firstChild);
+      wrap.appendChild(name);
+    }
     wrap.appendChild(chip('method', key, m.title));
     cell.appendChild(wrap);
   }
@@ -351,7 +397,7 @@
       if (swatch) leg.appendChild(swatch);
       var wrap = document.createElement('span');
       wrap.className = 'gl-name';
-      wrap.appendChild(link(METHODS[key].url, name));
+      wrap.appendChild(METHODS[key].url ? link(METHODS[key].url, name) : document.createTextNode(name));
       wrap.appendChild(chip('method', key, METHODS[key].title));
       leg.appendChild(wrap);
     }

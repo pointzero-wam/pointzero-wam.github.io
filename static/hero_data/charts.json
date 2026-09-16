@@ -14,26 +14,26 @@
   ],
   "unit": "error (lower is better)",
   "facet": true,
-  "note": "We train all baselines on our dataset with identical inputs. Errors are in centimetres. Each panel has its own scale — rigid-object errors are an order of magnitude larger, so cross-panel bar lengths are not comparable.",
+  "note": "We train all baselines on our dataset with identical inputs. Errors are in centimetres. The PointZero-JiT-mean-10 bars show the mean error over 10 sampled predictions. The table also includes flow-matching, regression and best-of-10 oracle ablations. Each panel has its own scale — rigid-object errors are an order of magnitude larger, so cross-panel bar lengths are not comparable.",
   "series": [
    {
     "name": "GBND",
     "color": "#2a78d6",
     "data": {
      "Deformable": {
-      "MDE": 17.4,
-      "CD": 14.9,
-      "EMD": 19.1
+      "MDE": 17.38,
+      "CD": 7.45,
+      "EMD": 16.47
      },
      "Articulated": {
-      "MDE": 11.1,
-      "CD": 14.8,
-      "EMD": 11.2
+      "MDE": 11.15,
+      "CD": 7.38,
+      "EMD": 11.11
      },
      "Rigid": {
-      "MDE": 155.7,
-      "CD": 186.6,
-      "EMD": 140.7
+      "MDE": 155.72,
+      "CD": 93.3,
+      "EMD": 154.44
      }
     }
    },
@@ -42,19 +42,19 @@
     "color": "#008300",
     "data": {
      "Deformable": {
-      "MDE": 17.3,
-      "CD": 14.8,
-      "EMD": 19.1
+      "MDE": 17.35,
+      "CD": 7.42,
+      "EMD": 16.44
      },
      "Articulated": {
-      "MDE": 10.9,
-      "CD": 14.2,
-      "EMD": 10.9
+      "MDE": 10.86,
+      "CD": 7.11,
+      "EMD": 10.83
      },
      "Rigid": {
-      "MDE": 155.0,
-      "CD": 185.5,
-      "EMD": 140.6
+      "MDE": 155.04,
+      "CD": 92.76,
+      "EMD": 153.77
      }
     }
    },
@@ -63,19 +63,19 @@
     "color": "#4a3aa7",
     "data": {
      "Deformable": {
-      "MDE": 9.0,
+      "MDE": 9.01,
       "CD": 4.1,
-      "EMD": 8.1
+      "EMD": 7.86
      },
      "Articulated": {
       "MDE": 8.7,
       "CD": 5.4,
-      "EMD": 8.2
+      "EMD": 8.29
      },
      "Rigid": {
-      "MDE": 67.6,
-      "CD": 33.6,
-      "EMD": 53.1
+      "MDE": 67.58,
+      "CD": 33.56,
+      "EMD": 64.02
      }
     }
    },
@@ -85,39 +85,39 @@
     "data": {
      "Deformable": {
       "MDE": 9.2,
-      "CD": 3.9,
-      "EMD": 9.2
+      "CD": 3.91,
+      "EMD": 8.28
      },
      "Articulated": {
-      "MDE": 8.3,
-      "CD": 5.3,
-      "EMD": 8.2
+      "MDE": 8.25,
+      "CD": 5.25,
+      "EMD": 8.0
      },
      "Rigid": {
-      "MDE": 62.3,
-      "CD": 30.0,
-      "EMD": 51.6
+      "MDE": 61.97,
+      "CD": 29.87,
+      "EMD": 58.57
      }
     }
    },
    {
-    "name": "PointZero-JiT",
+    "name": "PointZero-JiT-mean-10",
     "color": "#eb6834",
     "data": {
      "Deformable": {
-      "MDE": 4.2,
-      "CD": 1.8,
-      "EMD": 3.6
+      "MDE": 3.62,
+      "CD": 1.56,
+      "EMD": 3.22
      },
      "Articulated": {
-      "MDE": 3.0,
-      "CD": 1.9,
-      "EMD": 2.8
+      "MDE": 2.36,
+      "CD": 1.7,
+      "EMD": 2.3
      },
      "Rigid": {
-      "MDE": 32.4,
-      "CD": 15.4,
-      "EMD": 29.0
+      "MDE": 28.06,
+      "CD": 14.65,
+      "EMD": 26.35
      }
     }
    }
@@ -141,7 +141,7 @@
   ],
   "unit": "error in cm (lower is better)",
   "facet": false,
-  "note": "Prediction error in centimetres on six real robot–object interaction scenes.",
+  "note": "Prediction error in centimetres on six real robot–object interaction scenes. Both PointZero variants report best-of-10 oracle error: for each scene and metric, the minimum ground-truth error among 10 sampled predictions.",
   "series": [
    {
     "name": "GBND",
@@ -306,7 +306,7 @@
   ],
   "unit": "success rate % (higher is better)",
   "facet": false,
-  "note": "20 demonstrations per task. We omit DP: it has no real-world results.",
+  "note": "PointZero uses 20 action-labeled demonstrations plus 100 action-free videos per task. We omit DP: it has no real-world results.",
   "series": [
    {
     "name": "DP3",

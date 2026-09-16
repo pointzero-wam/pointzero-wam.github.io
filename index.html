@@ -190,8 +190,9 @@
           <p>
             We ablate PointZero, a simple DiT, against existing neural dynamics models trained on the same data.
             On held-out samples of our synthetic dataset, PointZero outperforms every baseline on every
-            metric and object category. The <a href="https://arxiv.org/abs/2511.13720" target="_blank" rel="noreferrer">JiT</a> training objective consistently beats both direct regression and flow matching,
-            suggesting it better captures the multimodal distribution over plausible point trajectories.
+            metric and object category. Flow matching and <a href="https://arxiv.org/abs/2511.13720" target="_blank" rel="noreferrer">JiT</a>
+            outperform direct regression. With sufficient training and matched sampling protocols,
+            JiT does not consistently outperform flow matching.
           </p>
         </div>
         <div class="results-table-container">
@@ -211,17 +212,19 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>GBND</td><td class="grp">17.4</td><td>14.9</td><td>19.1</td><td class="grp">11.1</td><td>14.8</td><td>11.2</td><td class="grp">155.7</td><td>186.6</td><td>140.7</td></tr>
-              <tr><td>ParticleFormer</td><td class="grp">17.3</td><td>14.8</td><td>19.1</td><td class="grp">10.9</td><td>14.2</td><td>10.9</td><td class="grp">155.0</td><td>185.5</td><td>140.6</td></tr>
-              <tr><td>PGND</td><td class="grp">9.0</td><td>4.1</td><td>8.1</td><td class="grp">8.7</td><td>5.4</td><td>8.2</td><td class="grp">67.6</td><td>33.6</td><td>53.1</td></tr>
-              <tr><td>PTv3</td><td class="grp">9.2</td><td>3.9</td><td>9.2</td><td class="grp">8.3</td><td>5.3</td><td>8.2</td><td class="grp">62.3</td><td>30.0</td><td>51.6</td></tr>
-              <tr><td><span class="pointzero">PointZero</span>-FM</td><td class="grp">5.9</td><td>2.5</td><td>5.1</td><td class="grp">4.6</td><td>2.9</td><td>4.3</td><td class="grp">37.7</td><td>17.3</td><td>34.0</td></tr>
-              <tr><td><span class="pointzero">PointZero</span>-Regression</td><td class="grp">4.7</td><td>2.0</td><td>4.2</td><td class="grp">5.4</td><td>3.5</td><td>5.2</td><td class="grp">42.0</td><td>20.9</td><td>39.5</td></tr>
-              <tr class="ours"><td><span class="pointzero">PointZero</span>-JiT</td><td class="grp best">4.2</td><td class="best">1.8</td><td class="best">3.6</td><td class="grp best">3.0</td><td class="best">1.9</td><td class="best">2.8</td><td class="grp best">32.4</td><td class="best">15.4</td><td class="best">29.0</td></tr>
+              <tr><td>GBND</td><td class="grp">17.38</td><td>7.45</td><td>16.47</td><td class="grp">11.15</td><td>7.38</td><td>11.11</td><td class="grp">155.72</td><td>93.30</td><td>154.44</td></tr>
+              <tr><td>ParticleFormer</td><td class="grp">17.35</td><td>7.42</td><td>16.44</td><td class="grp">10.86</td><td>7.11</td><td>10.83</td><td class="grp">155.04</td><td>92.76</td><td>153.77</td></tr>
+              <tr><td>PGND</td><td class="grp">9.01</td><td>4.10</td><td>7.86</td><td class="grp">8.70</td><td>5.40</td><td>8.29</td><td class="grp">67.58</td><td>33.56</td><td>64.02</td></tr>
+              <tr><td>PTv3</td><td class="grp">9.20</td><td>3.91</td><td>8.28</td><td class="grp">8.25</td><td>5.25</td><td>8.00</td><td class="grp">61.97</td><td>29.87</td><td>58.57</td></tr>
+              <tr class="ours"><td><span class="pointzero">PointZero</span>-FM-mean-10</td><td class="grp">3.59</td><td>1.55</td><td>3.18</td><td class="grp">2.40</td><td>1.77</td><td>2.34</td><td class="grp">27.26</td><td>14.17</td><td>25.41</td></tr>
+              <tr class="ours"><td><span class="pointzero">PointZero</span>-FM-oracle-10</td><td class="grp best">2.80</td><td class="best">1.24</td><td class="best">2.41</td><td class="grp">1.96</td><td>1.48</td><td>1.91</td><td class="grp">19.91</td><td>10.39</td><td>18.43</td></tr>
+              <tr class="ours"><td><span class="pointzero">PointZero</span>-Regression</td><td class="grp">4.08</td><td>1.74</td><td>3.63</td><td class="grp">3.85</td><td>2.57</td><td>3.68</td><td class="grp">32.14</td><td>16.43</td><td>29.78</td></tr>
+              <tr class="ours"><td><span class="pointzero">PointZero</span>-JiT-mean-10</td><td class="grp">3.62</td><td>1.56</td><td>3.22</td><td class="grp">2.36</td><td>1.70</td><td>2.30</td><td class="grp">28.06</td><td>14.65</td><td>26.35</td></tr>
+              <tr class="ours"><td><span class="pointzero">PointZero</span>-JiT-oracle-10</td><td class="grp">2.85</td><td>1.26</td><td>2.47</td><td class="grp best">1.95</td><td class="best">1.44</td><td class="best">1.89</td><td class="grp best">19.46</td><td class="best">10.30</td><td class="best">17.99</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="table-note">Dynamics prediction errors on held-out samples of our synthetic dataset. We train all baselines on the proposed dataset. MDE, CD and EMD are in centimetres. <b>Bold</b> marks the best result per column.</p>
+        <p class="table-note">Dynamics prediction errors on held-out samples of our synthetic dataset. We train all baselines on the proposed dataset. MDE, CD and EMD are in centimetres. Mean-10 averages each error metric over ten seeded predictions; oracle-10 uses ground truth to select the lowest error independently for each scene and metric from ten predictions. <b>Bold</b> marks the best result per column.</p>
       </div>
     </div>
   </div>
@@ -245,8 +248,8 @@
         <h2 class="title is-3">Action-conditioned dynamics prediction</h2>
         <div class="content has-text-justified">
           <p>
-            Post-trained to condition on robot end-effector state, PointZero outperforms strong scene-specific baselines
-            on the PGND benchmark of six real robot&ndash;object interaction scenes. Pre-training is critical:
+            Post-trained to condition on robot end-effector state, PointZero convincingly outperforms strong scene-specific
+            baselines on 4 of 6 real robot&ndash;object interaction scenes in the PGND benchmark. Pre-training is critical:
             the identical architecture, trained from scratch (PointZero-Scratch), falls far behind.
           </p>
         </div>
@@ -279,7 +282,7 @@
             </tbody>
           </table>
         </div>
-        <p class="table-note">Prediction errors in centimeters on the PGND benchmark. <b>Bold</b> marks the best result per column.</p>
+        <p class="table-note">Prediction errors in centimetres on the PGND benchmark. Both PointZero rows report per-scene, per-metric best-of-10 oracle results, selected using ground truth. <b>Bold</b> marks the best result per column.</p>
       </div>
     </div>
   </div>
@@ -293,9 +296,9 @@
         <h2 class="title is-3">Robot manipulation</h2>
         <div class="content has-text-justified">
           <p>
-            With a lightweight action head, post-trained PointZero drives imitation-learning policies from just 20 expert
-            demonstrations per task. It achieves the highest success rate on 6 of 7 simulated and real-world
-            manipulation tasks, and beats the strongest behavior-cloning baseline on every one.
+            With a lightweight action head, post-trained PointZero drives imitation-learning policies using 20 action-labeled
+            demonstrations and 100 actionless demonstration videos per task. It achieves the highest or joint-highest
+            success rate on 6 of 7 simulated and real-world manipulation tasks, and outperforms DP3 on all seven.
           </p>
         </div>
         <div class="policy-videos">
@@ -331,7 +334,7 @@
             </tbody>
           </table>
         </div>
-        <p class="table-note">Imitation-learning success rates (%). <b>Bold</b> marks the best result per task. We omit DP: it has no real-world results.</p>
+        <p class="table-note">Imitation-learning success rates (%). PointZero uses 20 action-labeled demonstrations and 100 actionless demonstration videos per task. <b>Bold</b> marks the best result per task. We omit DP: it has no real-world results.</p>
       </div>
     </div>
   </div>
@@ -387,10 +390,10 @@
 
 <script src="static/js/three.min.js"></script>
 <script src="static/js/hero.js?v=33"></script>
-<script src="static/js/method.js?v=23"></script>
+<script src="static/js/method.js?v=24"></script>
 <script src="static/js/multimodal.js?v=7"></script>
 <script src="static/js/charts.js?v=4"></script>
-<script src="static/js/glossary.js?v=1"></script>
+<script src="static/js/glossary.js?v=2"></script>
 <script src="static/js/gallery.js?v=4"></script>
 </body>
 </html>

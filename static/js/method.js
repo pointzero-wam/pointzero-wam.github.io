@@ -559,7 +559,7 @@
     perceiver: { title: 'Perceiver-IO',
       body: 'We use a perceiver-IO to reduce the total number of visual tokens to just 4 tokens.' },
     denoise: { title: 'Denoising transformer',
-      body: 'What is denoised is a <b>trajectory per point</b>, not a single cloud: every observed point carries a full 3D path, shown by its start state (t&nbsp;=&nbsp;0, grey — the observation, which is given), its end state (t&nbsp;=&nbsp;T−1, orange) and the path between them. This panel plays the sampler\'s <b>real intermediate states</b> for this scene, captured from the 9 Euler steps it actually ran: the readout is the true step index and the true mean distance left to the final sample. Drag the slider or click a step to scrub. Layers alternate between point attention (between point tokens only) and global attention with all available tokens.'  },
+      body: 'What is denoised is a <b>trajectory per point</b>, not a single cloud: every observed point carries a full 3D path, shown by its start state (t&nbsp;=&nbsp;0, grey — the observation, which is given), its end state (t&nbsp;=&nbsp;T−1, orange) and the path between them. This panel plays the sampler\'s <b>real intermediate states</b> from a recorded example with <b>9 Euler steps</b>; the paper\'s evaluations use <b>4 Euler steps</b>. The readout is the true step index and the true mean distance left to the final sample. Drag the slider or click a step to scrub. Layers alternate between point attention (between point tokens only) and global attention with all available tokens.'  },
     pred: { title: 'Dense 3D point tracks',
       body: 'The pre-training output: a future trajectory for every observed point.' },
     wam: { title: 'Action-conditioned dynamics',
@@ -653,8 +653,8 @@
         if (steps.length === DIT.NSTEP) return;
         steps.length = 0;
         row.innerHTML = '<span class="mf-steps-axis">step</span>';
-        head.innerHTML = 'the sampler takes <b>' + DIT.NSTEP + ' Euler steps</b>, and every ' +
-          'one of them runs the whole stack — many alternating point / global attention layers';
+        head.innerHTML = 'this recorded example uses <b>' + DIT.NSTEP + ' Euler steps</b>; ' +
+          'the paper\'s evaluations use <b>4</b>. Each step runs the whole stack of alternating point / global attention layers';
         for (var i = 0; i < DIT.NSTEP; i++) {
           var b = document.createElement('div');
           b.className = 'mf-step-b mf-step-c';
