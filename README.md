@@ -1,18 +1,5 @@
-# PointZero — project page
+# PointZero website redirect
 
-Source for the PointZero project page: **https://pointzero-wam.github.io**
+The project website is maintained at [pointzero-wm.github.io](https://pointzero-wm.github.io/).
 
-*PointZero: 3D Point Track Completion for Learning Transferable 3D Dynamics*
-
-Static site — no build step. Open `index.html`, or serve the directory:
-
-```bash
-python3 -m http.server 8000
-```
-
-- `index.html` — the page
-- `static/js/hero.js` — interactive 3D point-cloud viewers (vendored three.js)
-- `static/js/method.js` — interactive method figure
-- `static/js/charts.js` — interactive result charts
-- `static/js/gallery.js` — 4D dataset gallery
-- `static/hero_data/` — quantised point-cloud/track data for the viewers
+This legacy host redirects visitors to the canonical website, preserving paths, query strings, and section anchors in browsers with JavaScript enabled.
